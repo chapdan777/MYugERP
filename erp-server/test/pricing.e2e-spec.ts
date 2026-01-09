@@ -1,16 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('Pricing (e2e)', () => {
   let app: INestApplication;
   let accessToken: string;
-  let createdPriceModifierId: string;
-  
-  // Используем существующие UUID из тестовой базы данных
-  const existingProductId = '550e8400-e29b-41d4-a716-446655440000';
-  const existingPropertyId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -18,9 +13,9 @@ describe('Pricing (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidUnknownValues: true }));
     await app.init();
 
+    // Получаем токен для тестов
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
@@ -37,59 +32,209 @@ describe('Pricing (e2e)', () => {
 
   describe('POST /price-modifiers', () => {
     it('should create a new price modifier', async () => {
-      // Сначала проверим, что можем получить токен
-      expect(accessToken).toBeDefined();
-      
-      const priceModifierData = {
-        productId: existingProductId,
-        propertyId: existingPropertyId,
-        propertyValue: 'Test Value',
-        priceChange: 100,
-        changeType: 'absolute',
-      };
-      
-      console.log('Sending price modifier data:', priceModifierData);
-
       const response = await request(app.getHttpServer())
         .post('/price-modifiers')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(priceModifierData);
-        
-      console.log('Response status:', response.status);
-      console.log('Response body:', response.body);
-      
-      // Принимаем 201 или 400 (если endpoint еще не реализован полностью)
-      expect([201, 400]).toContain(response.status);
-      
-      if (response.status === 201) {
-        expect(response.body).toHaveProperty('id');
-        createdPriceModifierId = response.body.id;
-        console.log('Created price modifier ID:', createdPriceModifierId);
-      }
+        .send({
+          name: 'Тестовый модификатор',
+          code: 'TEST_001',
+          modifierType: 'percentage',
+          value: 10,
+          priority: 1,
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('name', 'Тестовый модификатор');
+      expect(response.body).toHaveProperty('code', 'TEST_001');
+      expect(response.body).toHaveProperty('modifierType', 'percentage');
+      expect(response.body).toHaveProperty('value', 10);
+      expect(response.body).toHaveProperty('isActive', true);
+    });
+
+    it('should validate required fields', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/price-modifiers')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          // Missing required fields
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('error', 'Bad Request');
+    });
+  });
+
+  describe('GET /price-modifiers', () => {
+    it('should return list of price modifiers', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/price-modifiers')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should require authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/price-modifiers')
+        .expect(401);
     });
   });
 
   describe('GET /price-modifiers/:id', () => {
     it('should return price modifier by id', async () => {
-      // Пропускаем тест, если price modifier не был создан
-      if (!createdPriceModifierId) {
-        console.warn('Skipping test - price modifier was not created');
-        return;
-      }
-      
+      // First create a modifier to test with
+      const createResponse = await request(app.getHttpServer())
+        .post('/price-modifiers')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Тестовый модификатор 2',
+          code: 'TEST_002',
+          modifierType: 'fixed_amount',
+          value: 100,
+        })
+        .expect(201);
+
+      const modifierId = createResponse.body.id;
+
       const response = await request(app.getHttpServer())
-        .get(`/price-modifiers/${createdPriceModifierId}`)
-        .set('Authorization', `Bearer ${accessToken}`);
-        
-      console.log('Get response status:', response.status);
-      console.log('Get response body:', response.body);
-      
-      // Принимаем 200 или 404 (если endpoint еще не реализован)
-      expect([200, 404]).toContain(response.status);
-      
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty('id', createdPriceModifierId);
-      }
+        .get(`/price-modifiers/${modifierId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', modifierId);
+      expect(response.body).toHaveProperty('name', 'Тестовый модификатор 2');
+      expect(response.body).toHaveProperty('modifierType', 'fixed_amount');
+    });
+
+    it('should return 404 for non-existent modifier', async () => {
+      await request(app.getHttpServer())
+        .get('/price-modifiers/999999')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(404);
+    });
+  });
+
+  describe('PUT /price-modifiers/:id', () => {
+    it('should update price modifier', async () => {
+      // First create a modifier
+      const createResponse = await request(app.getHttpServer())
+        .post('/price-modifiers')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Для обновления',
+          code: 'UPDATE_TEST',
+          modifierType: 'percentage',
+          value: 5,
+        })
+        .expect(201);
+
+      const modifierId = createResponse.body.id;
+
+      const response = await request(app.getHttpServer())
+        .put(`/price-modifiers/${modifierId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Обновленный модификатор',
+          value: 15,
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', modifierId);
+      expect(response.body).toHaveProperty('name', 'Обновленный модификатор');
+      expect(response.body).toHaveProperty('value', 15);
+    });
+  });
+
+  describe('DELETE /price-modifiers/:id', () => {
+    it('should delete price modifier', async () => {
+      // First create a modifier
+      const createResponse = await request(app.getHttpServer())
+        .post('/price-modifiers')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Для удаления',
+          code: 'DELETE_TEST',
+          modifierType: 'multiplier',
+          value: 1.1,
+        })
+        .expect(201);
+
+      const modifierId = createResponse.body.id;
+
+      // Delete it
+      await request(app.getHttpServer())
+        .delete(`/price-modifiers/${modifierId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(204);
+    });
+  });
+
+  describe('POST /price-modifiers/calculate', () => {
+    it('should calculate price with modifiers', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/price-modifiers/calculate')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          basePrice: 1500,
+          quantity: 10,
+          unit: 2.4,
+          coefficient: 1.2,
+          propertyValues: [
+            { propertyId: 1, value: 'белый' },
+            { propertyId: 2, value: 'глянцевый' },
+          ],
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('basePrice', 1500);
+      expect(response.body).toHaveProperty('finalPrice');
+      expect(response.body).toHaveProperty('totalPrice');
+      expect(response.body).toHaveProperty('appliedModifiers');
+      expect(Array.isArray(response.body.appliedModifiers)).toBe(true);
+      expect(response.body).toHaveProperty('breakdown');
+
+      // Проверяем расчеты
+      expect(response.body.finalPrice).toBeGreaterThanOrEqual(response.body.basePrice);
+      expect(response.body.totalPrice).toBeGreaterThanOrEqual(response.body.finalPrice);
+    });
+
+    it('should handle calculation with valid inputs', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/price-modifiers/calculate')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          basePrice: 1500,
+          quantity: 10,
+          unit: 2.4,
+          coefficient: 1.2,
+          propertyValues: [
+            { propertyId: 1, value: 'белый' },
+            { propertyId: 2, value: 'глянцевый' },
+          ],
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('basePrice', 1500);
+      expect(response.body).toHaveProperty('finalPrice');
+      expect(response.body).toHaveProperty('totalPrice');
+      expect(response.body).toHaveProperty('appliedModifiers');
+      expect(Array.isArray(response.body.appliedModifiers)).toBe(true);
+      expect(response.body).toHaveProperty('breakdown');
+    });
+
+    it('should require authentication', async () => {
+      await request(app.getHttpServer())
+        .post('/price-modifiers/calculate')
+        .send({
+          basePrice: 1000,
+          quantity: 5,
+          unit: 2,
+          coefficient: 1,
+        })
+        .expect(401);
     });
   });
 });

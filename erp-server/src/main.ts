@@ -44,6 +44,12 @@ async function bootstrap(): Promise<void> {
     .addTag('properties', 'Управление свойствами')
     .addTag('pricing', 'Ценообразование')
     .addTag('configuration', 'Конфигурация заказов')
+    .addTag('orders', 'Управление заказами')
+    .addTag('work-orders', 'Заказ-наряды и производственные задания')
+    .addTag('kanban', 'Канбан-доски')
+    .addTag('production', 'Производственные процессы')
+    .addTag('workforce', 'Управление трудовыми ресурсами')
+    .addTag('accounting', 'Бухгалтерия и платежи')
     .addBearerAuth(
       {
         type: 'http',
