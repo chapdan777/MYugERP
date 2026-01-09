@@ -7,6 +7,13 @@ import {
   UseGuards,
   Get,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, AuthResponseDto, RefreshResponseDto } from './dto';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
@@ -29,6 +36,7 @@ interface JwtPayload {
  * Контроллер аутентификации
  * Предоставляет endpoints для login, refresh, logout
  */
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -41,6 +49,15 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Аутентификация пользователя' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Успешная аутентификация', 
+    type: Object 
+  })
+  @ApiResponse({ status: 401, description: 'Неверные учетные данные' })
+  @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     // TODO: После реализации User модуля, использовать LocalAuthGuard
     // и получать user из @CurrentUser()
@@ -80,6 +97,13 @@ export class AuthController {
   @UseGuards(JwtRefreshAuthGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Обновить access токен' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Токен успешно обновлен', 
+    type: Object 
+  })
+  @ApiResponse({ status: 401, description: 'Невалидный refresh токен' })
   async refresh(
     @CurrentUser() user: RefreshTokenPayload & { refreshToken: string },
   ): Promise<RefreshResponseDto> {
@@ -108,6 +132,14 @@ export class AuthController {
    */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Выход из системы' })
+  @ApiBearerAuth()
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Успешный выход из системы', 
+    type: Object 
+  })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
   async logout(@CurrentUser() _user: JwtPayload): Promise<{ message: string }> {
     // TODO: Добавить логику отзыва refresh токена
     // await this.authService.revokeRefreshToken(user.sub);
@@ -123,6 +155,14 @@ export class AuthController {
    * Используется для проверки валидности токена
    */
   @Get('me')
+  @ApiOperation({ summary: 'Получить информацию о текущем пользователе' })
+  @ApiBearerAuth()
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Информация о пользователе получена', 
+    type: Object 
+  })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
   async getProfile(@CurrentUser() user: JwtPayload): Promise<JwtPayload> {
     // TODO: После реализации User модуля, возвращать полную информацию
     // const fullUser = await this.userService.findById(user.sub);

@@ -1,4 +1,12 @@
 import { Controller, Get, Post, Put, Body, Param, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductRequestDto } from '../dto/update-product-request.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
@@ -15,6 +23,8 @@ import {
 /**
  * REST API контроллер для управления продуктами
  */
+@ApiTags('products')
+@ApiBearerAuth()
 @Controller('products')
 export class ProductsController {
   constructor(
@@ -31,6 +41,16 @@ export class ProductsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Создать новый продукт' })
+  @ApiBody({ type: CreateProductDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Продукт успешно создан', 
+    type: ProductResponseDto 
+  })
+  @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
   async create(@Body() dto: CreateProductDto): Promise<ProductResponseDto> {
     const product = await this.createProductUseCase.execute({
       name: dto.name,
@@ -49,6 +69,13 @@ export class ProductsController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Получить список всех активных продуктов' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Список продуктов успешно получен', 
+    type: [ProductResponseDto] 
+  })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
   async findAllActive(): Promise<ProductResponseDto[]> {
     const products = await this.getAllActiveProductsUseCase.execute();
     return ProductResponseDto.fromDomainList(products);
@@ -59,6 +86,15 @@ export class ProductsController {
    */
   @Get(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Получить продукт по ID' })
+  @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Продукт найден', 
+    type: ProductResponseDto 
+  })
+  @ApiResponse({ status: 404, description: 'Продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<ProductResponseDto> {
     const product = await this.getProductByIdUseCase.execute(id);
     return ProductResponseDto.fromDomain(product);
@@ -69,6 +105,18 @@ export class ProductsController {
    */
   @Put(':id')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Обновить информацию о продукте' })
+  @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
+  @ApiBody({ type: UpdateProductRequestDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Продукт успешно обновлен', 
+    type: ProductResponseDto 
+  })
+  @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
+  @ApiResponse({ status: 404, description: 'Продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductRequestDto,
@@ -88,6 +136,16 @@ export class ProductsController {
    */
   @Put(':id/activate')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Активировать продукт' })
+  @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Продукт успешно активирован', 
+    type: ProductResponseDto 
+  })
+  @ApiResponse({ status: 404, description: 'Продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
   async activate(@Param('id', ParseIntPipe) id: number): Promise<ProductResponseDto> {
     const product = await this.activateProductUseCase.execute(id);
     return ProductResponseDto.fromDomain(product);
@@ -98,6 +156,16 @@ export class ProductsController {
    */
   @Put(':id/deactivate')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Деактивировать продукт' })
+  @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Продукт успешно деактивирован', 
+    type: ProductResponseDto 
+  })
+  @ApiResponse({ status: 404, description: 'Продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
   async deactivate(@Param('id', ParseIntPipe) id: number): Promise<ProductResponseDto> {
     const product = await this.deactivateProductUseCase.execute(id);
     return ProductResponseDto.fromDomain(product);

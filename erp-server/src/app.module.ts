@@ -64,10 +64,6 @@ import { AccountingModule } from './modules/accounting/accounting.module';
     // Модуль конфигурации шаблонов заказов
     // Модуль управления заказами
     OrdersModule,
-    // Модуль управления свойствами
-    PropertiesModule,
-    // Модуль ценообразования
-    PricingModule,
     // Модуль конфигурации
     ConfigurationModule,
     // Модуль производства
