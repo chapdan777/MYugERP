@@ -7,7 +7,7 @@ import { AppModule } from './../src/app.module';
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -16,10 +16,19 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('GET / should return API information', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect((res) => {
+        expect(res.body).toHaveProperty('message', 'Production ERP API');
+        expect(res.body).toHaveProperty('version', '1.0');
+        expect(res.body).toHaveProperty('documentation', '/api/docs');
+        expect(res.body).toHaveProperty('endpoints');
+      });
   });
 });

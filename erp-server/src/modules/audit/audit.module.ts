@@ -14,6 +14,9 @@ import {
 // Interceptor
 import { AuditInterceptor } from './infrastructure/interceptors/audit.interceptor';
 
+// Controller
+import { AuditLogsController } from './presentation/controllers/audit-logs.controller';
+
 /**
  * Модуль аудита действий пользователей
  */
@@ -21,6 +24,7 @@ import { AuditInterceptor } from './infrastructure/interceptors/audit.intercepto
   imports: [
     TypeOrmModule.forFeature([AuditLogEntity]),
   ],
+  controllers: [AuditLogsController],
   providers: [
     // Repository
     {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { WorkOrder } from '../entities/work-order.entity';
 import { WorkOrderStatus } from '../enums/work-order-status.enum';
-import { WorkOrderStatusTransitionRule } from '../specifications/work-order-status-transition.spec';
+import { WorkOrderStatusTransitionRule } from '../specifications/work-order-status-transition.rule';
 import {
   WorkOrderCanStartRule,
   WorkOrderCanSendToQualityCheckRule,

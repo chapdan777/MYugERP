@@ -1,5 +1,4 @@
 import { Order } from '../order.entity';
-import { OrderSection } from '../order-section.entity';
 import { OrderStatus } from '../../enums/order-status.enum';
 import { PaymentStatus } from '../../enums/payment-status.enum';
 import { DomainException } from '../../../../../common/exceptions/domain.exception';

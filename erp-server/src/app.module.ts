@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import appConfig from './common/config/app.config';
@@ -13,8 +13,13 @@ import { AuditModule } from './modules/audit/audit.module';
 import { ProductsModule } from './modules/products/products.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { PricingModule } from './modules/pricing/pricing.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
 import { AuditInterceptor } from './modules/audit/infrastructure/interceptors/audit.interceptor';
+import { JwtAuthGuard } from './core/guards/jwt-auth.guard';
+import { ProductionModule } from './modules/production/production.module';
+import { WorkforceModule } from './modules/workforce/workforce.module';
+import { AccountingModule } from './modules/accounting/accounting.module';
 
 /**
  * Корневой модуль приложения ERP-сервера
@@ -57,12 +62,30 @@ import { AuditInterceptor } from './modules/audit/infrastructure/interceptors/au
     // Модуль ценообразования
     PricingModule,
     // Модуль конфигурации шаблонов заказов
+    // Модуль управления заказами
+    OrdersModule,
+    // Модуль управления свойствами
+    PropertiesModule,
+    // Модуль ценообразования
+    PricingModule,
+    // Модуль конфигурации
     ConfigurationModule,
+    // Модуль производства
+    ProductionModule,
+    // Модуль трудовых ресурсов
+    WorkforceModule,
+    // Модуль бухгалтерии
+    AccountingModule,
     // Здесь будут подключаться остальные модули доменов
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    // Глобальная регистрация JwtAuthGuard
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
     // Глобальная регистрация AuditInterceptor
     {
       provide: APP_INTERCEPTOR,

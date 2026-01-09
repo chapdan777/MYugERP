@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Put, Body, Param, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
-import { CreateProductRequestDto } from '../dto/create-product-request.dto';
+import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductRequestDto } from '../dto/update-product-request.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
+import { ProductCategory } from '../../domain/enums/product-category.enum';
 import {
   CreateProductUseCase,
   GetProductByIdUseCase,
@@ -30,12 +31,12 @@ export class ProductsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateProductRequestDto): Promise<ProductResponseDto> {
+  async create(@Body() dto: CreateProductDto): Promise<ProductResponseDto> {
     const product = await this.createProductUseCase.execute({
       name: dto.name,
-      code: dto.code,
-      category: dto.category,
-      description: dto.description,
+      code: dto.code || '',
+      category: dto.category as ProductCategory,
+      description: dto.description || '',
       basePrice: dto.basePrice,
       unit: dto.unit,
     });
