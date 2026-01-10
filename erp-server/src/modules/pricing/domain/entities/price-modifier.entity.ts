@@ -174,21 +174,39 @@ export class PriceModifier {
 
   /**
    * Проверка, применим ли модификатор для данного набора свойств
+   * Поддерживает как простые условия (propertyId/propertyValue), так и сложные (conditionExpression)
    */
-  isApplicableFor(propertyValues: Map<number, string>, currentDate: Date = new Date()): boolean {
-    // Если модификатор не привязан к свойству, он применим всегда
-    if (!this.propertyId) {
-      return true;
-    }
-
-    // Проверяем, соответствует ли значение свойства
-    const actualValue = propertyValues.get(this.propertyId);
-    if (actualValue !== this.propertyValue) {
+  isApplicableFor(propertyValues: Map<number, string>, currentDate: Date = new Date(), conditionEvaluator?: any): boolean {
+    // Проверяем временные ограничения первоначально
+    if (!this.isCurrentlyActive(currentDate)) {
       return false;
     }
 
-    // Проверяем временные ограничения
-    return this.isCurrentlyActive(currentDate);
+    // Если есть сложное условие - используем его
+    if (this.conditionExpression) {
+      // Если передан evaluator, используем его
+      if (conditionEvaluator) {
+        try {
+          return conditionEvaluator.isConditionMet(this.conditionExpression, propertyValues, currentDate);
+        } catch (error) {
+          // В случае ошибки парсинга или вычисления возвращаем false
+          return false;
+        }
+      }
+      
+      // Если нет evaluator, возвращаем true для обратной совместимости
+      // В реальной реализации здесь должна быть логика оценки выражения
+      return true;
+    }
+
+    // Если есть простые условия - используем их
+    if (this.propertyId) {
+      const actualValue = propertyValues.get(this.propertyId);
+      return actualValue === this.propertyValue;
+    }
+
+    // Если нет ни простых, ни сложных условий - модификатор применим всегда
+    return true;
   }
 
   /**

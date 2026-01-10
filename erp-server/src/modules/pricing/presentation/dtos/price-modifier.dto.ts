@@ -23,6 +23,10 @@ export class CreatePriceModifierRequestDto {
   propertyValue?: string;
 
   @IsOptional()
+  @IsString()
+  conditionExpression?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   priority?: number;
@@ -46,6 +50,10 @@ export class UpdatePriceModifierRequestDto {
   propertyValue?: string | null;
 
   @IsOptional()
+  @IsString()
+  conditionExpression?: string | null;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   priority?: number;
@@ -59,6 +67,7 @@ export class PriceModifierResponseDto {
   value!: number;
   propertyId!: number | null;
   propertyValue!: string | null;
+  conditionExpression!: string | null;
   priority!: number;
   isActive!: boolean;
   createdAt!: Date;

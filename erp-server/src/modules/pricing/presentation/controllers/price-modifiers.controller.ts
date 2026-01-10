@@ -54,7 +54,10 @@ export class PriceModifiersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Создать модификатор цены' })
+  @ApiOperation({ 
+    summary: 'Создать модификатор цены',
+    description: 'Создает новый модификатор цены. Можно использовать простые условия (propertyId/propertyValue) или сложные выражения (conditionExpression).'
+  })
   @ApiBody({ type: CreatePriceModifierRequestDto })
   @ApiResponse({
     status: 201,
@@ -192,6 +195,7 @@ export class PriceModifiersController {
       value: modifier.getValue(),
       propertyId: modifier.getPropertyId() || null,
       propertyValue: modifier.getPropertyValue() || null,
+      conditionExpression: modifier.getConditionExpression() || null,
       priority: modifier.getPriority(),
       isActive: modifier.getIsActive(),
       createdAt: modifier.getCreatedAt(),
