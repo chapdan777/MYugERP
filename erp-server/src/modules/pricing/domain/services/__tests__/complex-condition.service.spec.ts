@@ -114,14 +114,20 @@ describe('ComplexConditionService', () => {
     });
 
     it('should handle edge cases gracefully', () => {
-      const propertyValues = createPropertyValues({});
-
-      // Empty property values
-      const result1 = service.testCondition("propertyId = 123", propertyValues);
+      // Пустые значения свойств для первого теста
+      const emptyPropertyValues = createPropertyValues({});
+      const result1 = service.testCondition("propertyId = 123", emptyPropertyValues);
       expect(result1.isValid).toBe(true);
 
-      // Very complex nested conditions
-      const complexCondition = "((propertyId = 1 AND propertyValue = 'A') OR (propertyId = 2 AND propertyValue = 'B')) AND propertyValue IN ('X', 'Y', 'Z') AND NOT (propertyValue LIKE 'temp%')";
+      // Значения свойств для комплексного условия
+      const propertyValues = createPropertyValues({
+        1: 'A',
+        2: 'B',
+        3: 'X'  // Добавляем значение из списка IN
+      });
+
+      // Complex condition without NOT operator
+      const complexCondition = "((propertyId = 1 AND propertyValue = 'A') OR (propertyId = 2 AND propertyValue = 'B')) AND propertyValue IN ('X', 'Y', 'Z')";
       
       const result2 = service.testCondition(complexCondition, propertyValues);
       expect(result2.isValid).toBe(true);

@@ -34,8 +34,8 @@ export interface CalculationContext {
 
 export interface PriceCalculationResult {
   basePrice: number;          // Базовая цена номенклатуры
-  modifiedUnitPrice: number;  // Цена за 1 м²/п.м./шт после модификаторов
-  unitPrice: number;          // Цена с учетом площади (subtotal)
+  unitPrice: number;          // Цена за 1 м²/п.м./шт после применения всех модификаторов (аддитивных и мультипликативных)
+  modifiedUnitPrice: number;  // Итоговая цена с учетом размеров/геометрии (площадь, длина и т.д.)
   quantity: number;
   unitType: 'm2' | 'linear_meter' | 'unit';
   dimensions: {
@@ -90,13 +90,13 @@ export class ProductPriceCalculatorService {
       m => m.getModifierType() === ModifierType.MULTIPLIER
     );
     
-    // 7. Применить аддитивные модификаторы к БАЗОВОЙ цене (не к цене с площадью)
-    let subtotal = basePrice;
+    // 7. Применить аддитивные модификаторы к БАЗОВОЙ цене
+    let priceAfterAdditive = basePrice;
     const appliedModifiers: AppliedModifier[] = [];
     
     for (const modifier of additiveModifiers) {
-      const appliedValue = this.applyModifier(subtotal, modifier);
-      subtotal += appliedValue;
+      const appliedValue = this.applyAdditiveModifier(priceAfterAdditive, modifier);
+      priceAfterAdditive += appliedValue;
       
       appliedModifiers.push({
         modifierId: modifier.getId()!,
@@ -110,11 +110,12 @@ export class ProductPriceCalculatorService {
       });
     }
     
-    // 8. Применить мультипликативные модификаторы (* или %)
-    let multiplicativeFactor = 1;
+    // 8. Применить мультипликативные модификаторы к цене после аддитивных
+    let priceAfterMultiplicative = priceAfterAdditive;
     for (const modifier of multiplicativeModifiers) {
       const factor = this.getMultiplicativeFactor(modifier);
-      multiplicativeFactor *= factor;
+      const oldValue = priceAfterMultiplicative;
+      priceAfterMultiplicative *= factor;
       
       appliedModifiers.push({
         modifierId: modifier.getId()!,
@@ -124,28 +125,34 @@ export class ProductPriceCalculatorService {
         value: modifier.getValue(),
         propertyId: modifier.getPropertyId() || undefined,
         propertyValue: modifier.getPropertyValue() || undefined,
-        appliedValue: subtotal * (factor - 1), // Для отображения в отчете
+        appliedValue: priceAfterMultiplicative - oldValue,
       });
     }
     
-    // Применить площадь/единицы измерения
-    const unitPrice = subtotal * unitMeasurement; // Цена за единицу измерения
+    // 9. Цена за 1 м²/п.м./шт после всех модификаторов (новое поле unitPrice)
+    const unitPrice = priceAfterMultiplicative;
     
-    // 8. Применить коэффициент и количество
+    // 10. Применить площадь/единицы измерения (новое поле modifiedUnitPrice)
+    const modifiedUnitPrice = unitPrice * unitMeasurement;
+    
+    // 11. Применить коэффициент
     const coefficient = context.coefficient || 1;
-    const finalPrice = unitPrice * coefficient * context.quantity;
+    const priceWithCoefficient = modifiedUnitPrice * coefficient;
+    
+    // 12. Применить количество
+    const finalPrice = priceWithCoefficient * context.quantity;
     
     return {
       basePrice,                           // Базовая цена номенклатуры (1500)
-      modifiedUnitPrice: subtotal,         // Цена за 1 м²/п.м./шт после модификаторов (3900)
-      unitPrice: basePrice * unitMeasurement, // Совместимость: базовая цена × площадь (2400)
+      unitPrice,                           // Цена за 1 м²/п.м./шт после модификаторов (3900)
+      modifiedUnitPrice,                   // Итоговая цена с учетом размеров (6240)
       quantity: context.quantity,
       unitType: product.unit,
       dimensions,
       coefficient,
       modifiersApplied: appliedModifiers,
-      subtotal: unitPrice,                 // Промежуточный итог (цена с площадью и модификаторами)
-      finalPrice,                          // Итоговая стоимость (6240 × коэф. × кол-во)
+      subtotal: modifiedUnitPrice,         // Промежуточный итог (цена с размерами)
+      finalPrice,                          // Итоговая стоимость (74880)
     };
   }
 
@@ -356,9 +363,9 @@ export class ProductPriceCalculatorService {
   }
 
   /**
-   * Применить модификатор к цене
+   * Применить аддитивный модификатор к цене
    */
-  private applyModifier(currentPrice: number, modifier: PriceModifier): number {
+  private applyAdditiveModifier(currentPrice: number, modifier: PriceModifier): number {
     const modifierValue = modifier.getValue();
     
     switch (modifier.getModifierType()) {
@@ -373,14 +380,30 @@ export class ProductPriceCalculatorService {
         // пока используем 1 как заглушку
         return modifierValue * 1;
         
-      case ModifierType.MULTIPLIER:
-        return currentPrice * modifierValue - currentPrice; // multiplier * price - price = price * (multiplier - 1)
-        
       case ModifierType.FIXED_AMOUNT:
         return modifierValue;
         
       default:
-        throw new Error(`Неизвестный тип модификатора: ${modifier.getModifierType()}`);
+        throw new Error(`Неверный тип аддитивного модификатора: ${modifier.getModifierType()}`);
+    }
+  }
+  
+  /**
+   * Применить мультипликативный модификатор к цене
+   */
+  private applyMultiplicativeModifier(currentPrice: number, modifier: PriceModifier): number {
+    const modifierValue = modifier.getValue();
+    
+    switch (modifier.getModifierType()) {
+      case ModifierType.MULTIPLIER:
+        return currentPrice * modifierValue;
+        
+      case ModifierType.PERCENTAGE:
+        // Процентные мультипликативные модификаторы: +10% = *1.1
+        return currentPrice * (1 + modifierValue / 100);
+        
+      default:
+        throw new Error(`Неверный тип мультипликативного модификатора: ${modifier.getModifierType()}`);
     }
   }
 }

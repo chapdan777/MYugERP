@@ -36,8 +36,8 @@ describe('ProductPriceCalculatorService', () => {
       // Коэффициент и количество: 6240 × 1.2 × 10 = 74880
 
       expect(result.basePrice).toBe(1500);
-      expect(result.modifiedUnitPrice).toBe(3900); // Цена за 1 м² после модификаторов
-      expect(result.unitPrice).toBe(3900); // Совпадает с modifiedUnitPrice
+      expect(result.unitPrice).toBe(3900); // Цена за 1 м² после модификаторов
+      expect(result.modifiedUnitPrice).toBe(6240); // Итоговая цена с учетом размеров (3900 × 1.6)
       expect(result.unitType).toBe('m2');
       expect(result.quantity).toBe(10);
       expect(result.coefficient).toBe(1.2);
@@ -81,8 +81,8 @@ describe('ProductPriceCalculatorService', () => {
       // Без модификаторов: 2800 × 5 = 14000
 
       expect(result.basePrice).toBe(800);
-      expect(result.modifiedUnitPrice).toBe(800); // Без модификаторов
-      expect(result.unitPrice).toBe(800); // Цена за 1 п.м.
+      expect(result.unitPrice).toBe(800); // Без модификаторов
+      expect(result.modifiedUnitPrice).toBe(2800); // Итоговая цена с учетом длины (800 × 3.5)
       expect(result.unitType).toBe('linear_meter');
       expect(result.quantity).toBe(5);
       expect(result.finalPrice).toBe(14000);
@@ -127,7 +127,8 @@ describe('ProductPriceCalculatorService', () => {
       // С количеством: 9360 × 2 = 18720
 
       expect(result.basePrice).toBe(1500);
-      expect(result.modifiedUnitPrice).toBe(3900);
+      expect(result.unitPrice).toBe(3900); // Цена за 1 м² после модификаторов
+      expect(result.modifiedUnitPrice).toBe(6240); // Итоговая цена с учетом размеров
       expect(result.coefficient).toBe(1.5);
       expect(result.quantity).toBe(2);
       expect(result.finalPrice).toBe(18720);
@@ -144,8 +145,8 @@ describe('ProductPriceCalculatorService', () => {
       expect(result.dimensions.length).toBe(2.0);
       expect(result.dimensions.width).toBe(0.8);
       expect(result.dimensions.depth).toBe(0.018);
-      expect(result.modifiedUnitPrice).toBe(3900); // После модификаторов
-      expect(result.unitPrice).toBe(3900); // Совпадает
+      expect(result.unitPrice).toBe(3900); // После модификаторов
+      expect(result.modifiedUnitPrice).toBe(6240); // С учетом площади (3900 × 1.6)
     });
   });
 
@@ -161,10 +162,10 @@ describe('ProductPriceCalculatorService', () => {
 
       // Площадь: 2.5 × 1.2 = 3.0 м²
       // Цена за 1 м² после модификаторов: 3900
-      // Итоговая цена: 3900 × 3.0 = 11700
-      expect(result.modifiedUnitPrice).toBe(3900);
-      expect(result.unitPrice).toBe(3900);
-      expect(result.subtotal).toBe(11700); // Цена с учетом площади
+      // Итоговая цена с учетом площади: 3900 × 3.0 = 11700
+      expect(result.unitPrice).toBe(3900); // Цена за 1 м² после модификаторов
+      expect(result.modifiedUnitPrice).toBe(11700); // Итоговая цена с учетом площади
+      expect(result.subtotal).toBe(11700); // Промежуточный итог
     });
 
     it('should calculate linear meter units correctly', async () => {
@@ -190,9 +191,9 @@ describe('ProductPriceCalculatorService', () => {
 
       // Погонные метры: 4.0
       // Цена за 1 п.м. без модификаторов: 500
-      // Итоговая цена: 500 × 4.0 = 2000
-      expect(result.modifiedUnitPrice).toBe(500);
-      expect(result.unitPrice).toBe(500);
+      // Итоговая цена с учетом длины: 500 × 4.0 = 2000
+      expect(result.unitPrice).toBe(500); // Цена за 1 п.м. без модификаторов
+      expect(result.modifiedUnitPrice).toBe(2000); // Итоговая цена с учетом длины
       expect(result.subtotal).toBe(2000);
 
       (service as any).getProductById = originalMethod;
@@ -220,9 +221,10 @@ describe('ProductPriceCalculatorService', () => {
 
       // Для unit тип единицы измерения = 1
       // Цена за 1 шт без модификаторов: 200
-      // Итоговая цена: 200 × 1 × 5 = 1000
-      expect(result.modifiedUnitPrice).toBe(200);
-      expect(result.unitPrice).toBe(200);
+      // modifiedUnitPrice = unitPrice × 1 = 200 (без учета количества)
+      // Итоговая цена с учетом количества: 200 × 5 = 1000
+      expect(result.unitPrice).toBe(200); // Цена за 1 шт после модификаторов
+      expect(result.modifiedUnitPrice).toBe(200); // Итоговая цена с учетом размеров (= unitPrice для unit)
       expect(result.finalPrice).toBe(1000);
 
       (service as any).getProductById = originalMethod;
