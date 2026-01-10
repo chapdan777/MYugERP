@@ -3,6 +3,7 @@ import { PRICE_MODIFIER_REPOSITORY } from '../../domain/repositories/injection-t
 import { IPriceModifierRepository } from '../../domain/repositories/price-modifier.repository.interface';
 import { PriceModifier } from '../../domain/entities/price-modifier.entity';
 import { ModifierType } from '../../domain/enums/modifier-type.enum';
+import { ProductPriceCalculatorService } from '../../domain/services/product-price-calculator.service';
 
 export interface CalculatePriceDto {
   basePrice: number;
@@ -39,31 +40,46 @@ export class CalculatePriceUseCase {
   constructor(
     @Inject(PRICE_MODIFIER_REPOSITORY)
     private readonly modifierRepository: IPriceModifierRepository,
+    private readonly productPriceCalculator: ProductPriceCalculatorService,
   ) {}
 
   async execute(dto: CalculatePriceDto): Promise<CalculatePriceResult> {
-    // Получаем все активные модификаторы
+    // Если указан productId, используем интеграцию с Product модулем
+    if (dto.productId) {
+      const result = await this.productPriceCalculator.calculatePrice({
+        productId: dto.productId,
+        quantity: dto.quantity,
+        // TODO: Добавить длину, ширину, глубину из DTO когда будут добавлены
+        userSelectedProperties: dto.propertyValues.map(pv => ({
+          propertyId: pv.propertyId,
+          value: pv.propertyValue,
+        })),
+        coefficient: dto.coefficient,
+      });
+
+      return {
+        basePrice: result.basePrice,
+        modifiersApplied: result.modifiersApplied,
+        subtotal: result.subtotal,
+        coefficient: result.coefficient,
+        finalPrice: result.finalPrice,
+        unitType: result.unitType,
+        quantity: result.quantity,
+      };
+    }
+
+    // Старая логика для обратной совместимости (без productId)
     const allModifiers = await this.modifierRepository.findAllActive();
     
-    // Преобразуем propertyValues в Map для удобства проверки применимости
     const propertyMap = new Map<number, string>();
     dto.propertyValues.forEach(pv => propertyMap.set(pv.propertyId, pv.propertyValue));
 
-    // Фильтруем применимые модификаторы
     let applicableModifiers = allModifiers.filter(modifier => 
       modifier.isApplicableFor(propertyMap)
     );
 
-    // Если указан productId, можем дополнительно фильтровать модификаторы
-    if (dto.productId) {
-      // В будущем можно добавить специфические фильтры по продукту
-      // Пока просто оставляем все применимые
-    }
-
-    // Сортируем модификаторы по приоритету
     applicableModifiers.sort((a, b) => a.getPriority() - b.getPriority());
 
-    // Применяем модификаторы к базовой цене
     let subtotal = dto.basePrice;
     const appliedModifiers: AppliedModifier[] = [];
 
@@ -83,7 +99,6 @@ export class CalculatePriceUseCase {
       });
     }
 
-    // Применяем коэффициент
     const coefficient = dto.coefficient || 1;
     const finalPrice = subtotal * coefficient * dto.quantity;
 

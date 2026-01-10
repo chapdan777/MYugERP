@@ -15,6 +15,7 @@ import {
   DeactivatePriceModifierUseCase,
   CalculatePriceUseCase,
 } from './application/use-cases';
+import { ProductPriceCalculatorService } from './domain/services/product-price-calculator.service';
 
 @Module({
   imports: [
@@ -37,6 +38,8 @@ import {
     ActivatePriceModifierUseCase,
     DeactivatePriceModifierUseCase,
     CalculatePriceUseCase,
+    // Services
+    ProductPriceCalculatorService,
   ],
   exports: [
     PRICE_MODIFIER_REPOSITORY,

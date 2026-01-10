@@ -13,8 +13,11 @@ export class PriceModifier {
   private value: number; // Значение модификатора (процент, сумма, множитель и т.д.)
   private propertyId: number | null; // Свойство, с которым связан модификатор
   private propertyValue: string | null; // Значение свойства, при котором применяется модификатор
+  private conditionExpression: string | null; // Сложное условие фильтрации (альтернатива propertyId/propertyValue)
   private priority: number; // Порядок применения модификаторов (меньше = раньше)
   private isActive: boolean;
+  private startDate: Date | null; // Дата начала действия (для временных модификаторов)
+  private endDate: Date | null;   // Дата окончания действия (для временных модификаторов)
   private createdAt: Date;
   private updatedAt: Date;
 
@@ -26,8 +29,11 @@ export class PriceModifier {
     value: number;
     propertyId?: number | null;
     propertyValue?: string | null;
+    conditionExpression?: string | null;
     priority?: number;
     isActive?: boolean;
+    startDate?: Date | null;
+    endDate?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
   }) {
@@ -38,8 +44,11 @@ export class PriceModifier {
     this.value = props.value;
     this.propertyId = props.propertyId ?? null;
     this.propertyValue = props.propertyValue ?? null;
+    this.conditionExpression = props.conditionExpression ?? null;
     this.priority = props.priority ?? 0;
     this.isActive = props.isActive ?? true;
+    this.startDate = props.startDate ?? null;
+    this.endDate = props.endDate ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
 
@@ -56,7 +65,10 @@ export class PriceModifier {
     value: number;
     propertyId?: number | null;
     propertyValue?: string | null;
+    conditionExpression?: string | null;
     priority?: number;
+    startDate?: Date | null;
+    endDate?: Date | null;
   }): PriceModifier {
     return new PriceModifier(props);
   }
@@ -72,8 +84,11 @@ export class PriceModifier {
     value: number;
     propertyId: number | null;
     propertyValue: string | null;
+    conditionExpression: string | null;
     priority: number;
     isActive: boolean;
+    startDate: Date | null;
+    endDate: Date | null;
     createdAt: Date;
     updatedAt: Date;
   }): PriceModifier {
@@ -129,12 +144,38 @@ export class PriceModifier {
         'Если указано свойство, необходимо указать значение свойства',
       );
     }
+
+    // Взаимоисключающие системы условий
+    const hasLegacyConditions = this.propertyId !== null || this.propertyValue !== null;
+    const hasComplexConditions = this.conditionExpression !== null;
+    
+    if (hasLegacyConditions && hasComplexConditions) {
+      throw new DomainException(
+        'Нельзя одновременно использовать старую систему условий (propertyId/propertyValue) и новую (conditionExpression)',
+      );
+    }
+
+    // Если используется новая система, expression не может быть пустым
+    if (hasComplexConditions && this.conditionExpression!.trim().length === 0) {
+      throw new DomainException('Выражение условия не может быть пустым');
+    }
+
+    // Валидация временных ограничений
+    if (this.startDate && this.endDate && this.startDate > this.endDate) {
+      throw new DomainException('Дата начала не может быть позже даты окончания');
+    }
+
+    // Если указан только startDate, он должен быть в будущем (для новых модификаторов)
+    if (this.startDate && !this.id && this.startDate < new Date()) {
+      // Предупреждение: можно создавать модификаторы с прошедшей датой начала
+      // Это может быть полезно для исторических данных
+    }
   }
 
   /**
    * Проверка, применим ли модификатор для данного набора свойств
    */
-  isApplicableFor(propertyValues: Map<number, string>): boolean {
+  isApplicableFor(propertyValues: Map<number, string>, currentDate: Date = new Date()): boolean {
     // Если модификатор не привязан к свойству, он применим всегда
     if (!this.propertyId) {
       return true;
@@ -142,7 +183,39 @@ export class PriceModifier {
 
     // Проверяем, соответствует ли значение свойства
     const actualValue = propertyValues.get(this.propertyId);
-    return actualValue === this.propertyValue;
+    if (actualValue !== this.propertyValue) {
+      return false;
+    }
+
+    // Проверяем временные ограничения
+    return this.isCurrentlyActive(currentDate);
+  }
+
+  /**
+   * Проверка, активен ли модификатор на текущую дату
+   */
+  isCurrentlyActive(currentDate: Date = new Date()): boolean {
+    // Если не активен вообще, то точно не применим
+    if (!this.isActive) {
+      return false;
+    }
+
+    // Если нет временных ограничений, то применим
+    if (!this.startDate && !this.endDate) {
+      return true;
+    }
+
+    // Проверяем начало действия
+    if (this.startDate && currentDate < this.startDate) {
+      return false;
+    }
+
+    // Проверяем окончание действия
+    if (this.endDate && currentDate > this.endDate) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -153,7 +226,10 @@ export class PriceModifier {
     value?: number;
     propertyId?: number | null;
     propertyValue?: string | null;
+    conditionExpression?: string | null;
     priority?: number;
+    startDate?: Date | null;
+    endDate?: Date | null;
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
@@ -171,11 +247,23 @@ export class PriceModifier {
       this.propertyValue = props.propertyValue;
     }
 
+    if (props.conditionExpression !== undefined) {
+      this.conditionExpression = props.conditionExpression;
+    }
+
     if (props.priority !== undefined) {
       if (props.priority < 0) {
         throw new DomainException('Приоритет не может быть отрицательным');
       }
       this.priority = props.priority;
+    }
+
+    if (props.startDate !== undefined) {
+      this.startDate = props.startDate;
+    }
+
+    if (props.endDate !== undefined) {
+      this.endDate = props.endDate;
     }
 
     this.updatedAt = new Date();
@@ -233,12 +321,24 @@ export class PriceModifier {
     return this.propertyValue;
   }
 
+  getConditionExpression(): string | null {
+    return this.conditionExpression;
+  }
+
   getPriority(): number {
     return this.priority;
   }
 
   getIsActive(): boolean {
     return this.isActive;
+  }
+
+  getStartDate(): Date | null {
+    return this.startDate;
+  }
+
+  getEndDate(): Date | null {
+    return this.endDate;
   }
 
   getCreatedAt(): Date {

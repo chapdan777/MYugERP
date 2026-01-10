@@ -38,4 +38,9 @@ export class PriceModifierEntity {
 
   @UpdateDateColumn()
   updatedAt!: Date;
-}
+
+  @Column({ type: 'timestamp', nullable: true })
+  startDate!: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  endDate!: Date | null;}

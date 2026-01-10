@@ -19,6 +19,8 @@ export class PriceModifierMapper {
       propertyValue: entity.propertyValue,
       priority: entity.priority,
       isActive: entity.isActive,
+      startDate: entity.startDate,
+      endDate: entity.endDate,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });
@@ -42,6 +44,8 @@ export class PriceModifierMapper {
     entity.propertyValue = domain.getPropertyValue();
     entity.priority = domain.getPriority();
     entity.isActive = domain.getIsActive();
+    entity.startDate = domain.getStartDate();
+    entity.endDate = domain.getEndDate();
     entity.createdAt = domain.getCreatedAt();
     entity.updatedAt = domain.getUpdatedAt();
     
