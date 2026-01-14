@@ -1,0 +1,189 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Ramp up phase
+    - duration: 30
+      arrivalRate: 1
+    - duration: 30
+      arrivalRate: 5
+    - duration: 60
+      arrivalRate: 10
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 20
+    # Ramp down phase
+    - duration: 60
+      arrivalRate: 10
+    - duration: 30
+      arrivalRate: 5
+    - duration: 30
+      arrivalRate: 1
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+
+scenarios:
+  - name: 'Concurrent Users Price Calculation'
+    weight: 3
+    flow:
+      - post:
+          url: '/auth/login'
+          json:
+            username: 'admin'
+            password: 'admin123'
+          capture:
+            json: '$.accessToken'
+            as: 'authToken'
+      
+      - loop:
+          - post:
+              url: '/price-modifiers/calculate'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              json:
+                basePrice: '{{ $randomNumber(1000, 3000) }}'
+                quantity: '{{ $randomNumber(1, 20) }}'
+                unit: '{{ $randomNumber(0.5, 3.0) }}'
+                coefficient: '{{ $randomNumber(1.0, 2.0) }}'
+                propertyValues:
+                  - propertyId: 1
+                    value: '{{ $randomChoice(["премиум", "стандарт", "эконом"]) }}'
+                  - propertyId: 2
+                    value: '{{ $randomChoice(["массив_дуб", "мдф", "пластик"]) }}'
+              expect:
+                - statusCode: 200
+          - think: '{{ $randomNumber(0.5, 2.0) }}'
+        count: 5
+
+  - name: 'Order Management Workflow'
+    weight: 2
+    flow:
+      - post:
+          url: '/auth/login'
+          json:
+            username: 'admin'
+            password: 'admin123'
+          capture:
+            json: '$.accessToken'
+            as: 'authToken'
+      
+      - loop:
+          # Create order
+          - post:
+              url: '/orders'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              json:
+                orderNumber: 'PERF-{{ $randomString(6) }}'
+                clientId: '{{ $randomNumber(1, 100) }}'
+                clientName: 'Performance Test Client {{ $randomNumber(1, 100) }}'
+                deadline: '{{ $randomDate(1, 30) }}'
+              capture:
+                json: '$.id'
+                as: 'orderId'
+              expect:
+                - statusCode: 201
+          
+          # Add sections
+          - loop:
+              - post:
+                  url: '/orders/{{ orderId }}/sections'
+                  headers:
+                    Authorization: 'Bearer {{ authToken }}'
+                  json:
+                    sectionNumber: '{{ $loopCount }}'
+                    sectionName: 'Section {{ $loopCount }}'
+                    notes: 'Performance test section'
+                  capture:
+                    json: '$.id'
+                    as: 'sectionId'
+                  expect:
+                    - statusCode: 201
+                
+                # Add items to section
+                - loop:
+                    - post:
+                        url: '/orders/{{ orderId }}/sections/{{ sectionId }}/items'
+                        headers:
+                          Authorization: 'Bearer {{ authToken }}'
+                        json:
+                          productId: '{{ $randomNumber(1, 50) }}'
+                          productName: 'Product {{ $randomNumber(1, 50) }}'
+                          quantity: '{{ $randomNumber(1, 10) }}'
+                          unit: '{{ $randomNumber(0.5, 2.5) }}'
+                          basePrice: '{{ $randomNumber(500, 3000) }}'
+                          coefficient: '{{ $randomNumber(1.0, 1.5) }}'
+                          properties:
+                            - propertyId: 1
+                              propertyName: 'Model'
+                              propertyValue: '{{ $randomChoice(["Standard", "Premium", "Deluxe"]) }}'
+                            - propertyId: 2
+                              propertyName: 'Material'
+                              propertyValue: '{{ $randomChoice(["Wood", "MDF", "Plastic"]) }}'
+                        expect:
+                          - statusCode: 201
+                    - think: 0.1
+                  count: '{{ $randomNumber(2, 5) }}'
+              - think: 0.2
+            count: '{{ $randomNumber(1, 3) }}'
+          
+          # Update order status
+          - patch:
+              url: '/orders/{{ orderId }}/status'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              json:
+                status: '{{ $randomChoice(["CONFIRMED", "IN_PRODUCTION"]) }}'
+              expect:
+                - statusCode: 200
+          
+          - think: '{{ $randomNumber(1, 3) }}'
+        count: 3
+
+  - name: 'Database Intensive Operations'
+    weight: 1
+    flow:
+      - post:
+          url: '/auth/login'
+          json:
+            username: 'admin'
+            password: 'admin123'
+          capture:
+            json: '$.accessToken'
+            as: 'authToken'
+      
+      - loop:
+          # Get all price modifiers (database read)
+          - get:
+              url: '/price-modifiers'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              expect:
+                - statusCode: 200
+          
+          # Complex price calculation with many modifiers
+          - post:
+              url: '/price-modifiers/calculate'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              json:
+                basePrice: 1500
+                quantity: 100
+                unit: 2.5
+                coefficient: 1.3
+                propertyValues:
+                  - propertyId: 1
+                    value: 'премиум'
+                  - propertyId: 2
+                    value: 'массив_дуб'
+                  - propertyId: 3
+                    value: 'высокий_класс'
+                  - propertyId: 4
+                    value: 'эксклюзив'
+                  - propertyId: 5
+                    value: 'срочный_заказ'
+              expect:
+                - statusCode: 200
+          
+          - think: '{{ $randomNumber(0.5, 1.5) }}'
+        count: 8

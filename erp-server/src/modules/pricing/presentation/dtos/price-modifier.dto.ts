@@ -59,17 +59,17 @@ export class UpdatePriceModifierRequestDto {
   priority?: number;
 }
 
-export class PriceModifierResponseDto {
-  id!: number;
-  name!: string;
-  code!: string;
-  modifierType!: ModifierType;
-  value!: number;
-  propertyId!: number | null;
-  propertyValue!: string | null;
-  conditionExpression!: string | null;
-  priority!: number;
-  isActive!: boolean;
-  createdAt!: Date;
-  updatedAt!: Date;
+export interface PriceModifierResponseDto {
+  id: number;
+  name: string;
+  code: string;
+  modifierType: ModifierType;
+  value: number;
+  propertyId: number | null;
+  propertyValue: string | null;
+  conditionExpression: string | null;
+  priority: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

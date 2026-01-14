@@ -27,6 +27,9 @@ export class PriceModifierEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   propertyValue!: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  conditionExpression!: string | null;
+
   @Column({ type: 'int', default: 0 })
   priority!: number;
 

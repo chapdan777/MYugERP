@@ -83,6 +83,7 @@ export class PriceModifiersController {
       value: modifier.getValue(),
       propertyId: modifier.getPropertyId(),
       propertyValue: modifier.getPropertyValue(),
+      conditionExpression: modifier.getConditionExpression(),
       priority: modifier.getPriority(),
       isActive: modifier.getIsActive(),
       createdAt: modifier.getCreatedAt(),

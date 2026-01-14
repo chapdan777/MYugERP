@@ -1,0 +1,29 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Basic API Health Check"
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/orders"
+          expect:
+            - statusCode: 401  # Expected unauthorized without auth
+
+      - post:
+          url: "/auth/login"
+          json:
+            username: "admin"
+            password: "password123"
+          expect:
+            - statusCode: 401  # Will fail but that's expected

@@ -22,7 +22,8 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/common/config/typeorm.config.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/common/config/typeorm.config.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/common/config/typeorm.config.ts",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
+    "test:setup-db": "ts-node -r tsconfig-paths/register scripts/setup-test-db.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -62,6 +63,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@types/supertest": "^6.0.2",
+    "artillery": "^2.0.27",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

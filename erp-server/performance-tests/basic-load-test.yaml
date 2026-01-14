@@ -1,0 +1,54 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+    - duration: 120
+      arrivalRate: 10
+    - duration: 60
+      arrivalRate: 5
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+
+scenarios:
+  - name: 'Price Calculation Load Test'
+    flow:
+      - post:
+          url: '/auth/login'
+          json:
+            username: 'admin'
+            password: 'admin123'
+          capture:
+            json: '$.accessToken'
+            as: 'authToken'
+      
+      - loop:
+          - post:
+              url: '/price-modifiers/calculate'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              json:
+                basePrice: 1500
+                quantity: 10
+                unit: 1.6
+                coefficient: 1.2
+                propertyValues:
+                  - propertyId: 1
+                    value: 'премиум'
+                  - propertyId: 2
+                    value: 'массив_дуб'
+              expect:
+                - statusCode: 200
+          - post:
+              url: '/orders'
+              headers:
+                Authorization: 'Bearer {{ authToken }}'
+              json:
+                orderNumber: 'LOAD-TEST-{{ $randomString(5) }}'
+                clientId: 1
+                clientName: 'Load Test Client'
+              expect:
+                - statusCode: 201
+          - think: 1
+        count: 10
