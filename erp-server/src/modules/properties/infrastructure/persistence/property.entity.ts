@@ -13,7 +13,7 @@ export class PropertyEntity {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   code!: string;
 
   @Column({ type: 'varchar', length: 50 })

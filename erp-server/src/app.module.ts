@@ -15,6 +15,7 @@ import { PropertiesModule } from './modules/properties/properties.module';
 import { PricingModule } from './modules/pricing/pricing.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ConfigurationModule } from './modules/configuration/configuration.module';
+import { PropertyHeadersModule } from './modules/property-headers/property-headers.module';
 import { AuditInterceptor } from './modules/audit/infrastructure/interceptors/audit.interceptor';
 import { JwtAuthGuard } from './core/guards/jwt-auth.guard';
 import { ProductionModule } from './modules/production/production.module';
@@ -61,7 +62,8 @@ import { AccountingModule } from './modules/accounting/accounting.module';
     PropertiesModule,
     // Модуль ценообразования
     PricingModule,
-    // Модуль конфигурации шаблонов заказов
+    // Модуль управления шапками свойств
+    PropertyHeadersModule,
     // Модуль управления заказами
     OrdersModule,
     // Модуль конфигурации

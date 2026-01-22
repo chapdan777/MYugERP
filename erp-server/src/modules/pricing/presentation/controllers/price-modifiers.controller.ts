@@ -23,6 +23,7 @@ import {
   CreatePriceModifierRequestDto,
   UpdatePriceModifierRequestDto,
   PriceModifierResponseDto,
+  PriceModifierResponseDtoSwagger,
 } from '../dtos/price-modifier.dto';
 import {
   CalculatePriceRequestDto,
@@ -62,7 +63,7 @@ export class PriceModifiersController {
   @ApiResponse({
     status: 201,
     description: 'Модификатор цены успешно создан',
-    type: PriceModifierResponseDto,
+    type: PriceModifierResponseDtoSwagger,
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -78,7 +79,7 @@ export class PriceModifiersController {
   @ApiResponse({
     status: 200,
     description: 'Список модификаторов успешно получен',
-    type: [PriceModifierResponseDto],
+    type: [PriceModifierResponseDtoSwagger],
   })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
   async findAll() {
@@ -92,7 +93,7 @@ export class PriceModifiersController {
   @ApiResponse({
     status: 200,
     description: 'Модификатор найден',
-    type: PriceModifierResponseDto,
+    type: PriceModifierResponseDtoSwagger,
   })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
   @ApiResponse({ status: 404, description: 'Модификатор не найден' })
@@ -108,7 +109,7 @@ export class PriceModifiersController {
   @ApiResponse({
     status: 200,
     description: 'Модификатор успешно обновлен',
-    type: PriceModifierResponseDto,
+    type: PriceModifierResponseDtoSwagger,
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })

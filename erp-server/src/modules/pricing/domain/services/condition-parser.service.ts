@@ -9,7 +9,6 @@ import {
   UnaryOperationNode,
   InNode,
   BetweenNode,
-  NodeType,
 } from '../types/condition.types';
 
 /**

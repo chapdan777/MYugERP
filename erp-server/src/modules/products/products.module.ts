@@ -13,6 +13,8 @@ import {
   ActivateProductUseCase,
   DeactivateProductUseCase,
 } from './application/use-cases';
+import { SetProductPropertiesUseCase } from './application/use-cases/set-product-properties.use-case';
+import { GetProductPropertiesUseCase } from './application/use-cases/get-product-properties.use-case';
 import { ProductsController } from './presentation/controllers/products.controller';
 
 /**
@@ -39,6 +41,8 @@ import { ProductsController } from './presentation/controllers/products.controll
     UpdateProductUseCase,
     ActivateProductUseCase,
     DeactivateProductUseCase,
+    SetProductPropertiesUseCase,
+    GetProductPropertiesUseCase,
   ],
   controllers: [ProductsController],
   exports: [

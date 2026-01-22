@@ -85,22 +85,21 @@ export class ConditionEvaluatorService {
   }
 
   private evaluatePropertyReference(node: PropertyRefNode, context: ConditionEvaluationContext): boolean {
-    // В реальной реализации здесь должна быть логика получения значения свойства
-    // Пока возвращаем true для демонстрации
+    // Получаем значение свойства из контекста
+    const propertyValue = context.propertyValues.get(node.propertyId);
+    return propertyValue !== undefined;
     return true;
   }
 
   private evaluateStringLiteral(node: StringLiteralNode): boolean {
-    // Строковые литералы сами по себе не имеют булевого значения
-    // Они используются в сравнениях
-    // Для целей тестирования возвращаем true
+    // Строковые литералы всегда истинны как значения
+    return node.value.length > 0;
     return true;
   }
 
   private evaluateNumberLiteral(node: NumberLiteralNode): boolean {
-    // Числовые литералы сами по себе не имеют булевого значения
-    // Они используются в сравнениях
-    // Для целей тестирования возвращаем true
+    // Числовые литералы всегда истинны как значения
+    return !isNaN(node.value);
     return true;
   }
 
@@ -229,10 +228,13 @@ export class ConditionEvaluatorService {
   private getNodeValue(node: ASTNode, context: ConditionEvaluationContext): string | number {
     switch (node.type) {
       case 'PROPERTY_REF':
-        // Здесь должна быть логика получения значения свойства из контекста
-        // Пока возвращаем заглушку в зависимости от контекста
-        // Для тестов возвращаем значение, которое позволяет пройти сравнения
-        return 'test_value';
+        // Получаем значение свойства из контекста
+        const propertyNode = node as PropertyRefNode;
+        const propertyValue = context.propertyValues.get(propertyNode.propertyId);
+        if (propertyValue === undefined) {
+          throw new DomainException(`Свойство с ID ${propertyNode.propertyId} не найдено`);
+        }
+        return propertyValue;
 
       case 'STRING_LITERAL':
         return (node as StringLiteralNode).value;

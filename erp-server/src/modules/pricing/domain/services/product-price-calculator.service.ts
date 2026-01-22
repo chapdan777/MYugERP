@@ -387,23 +387,5 @@ export class ProductPriceCalculatorService {
         throw new Error(`Неверный тип аддитивного модификатора: ${modifier.getModifierType()}`);
     }
   }
-  
-  /**
-   * Применить мультипликативный модификатор к цене
-   */
-  private applyMultiplicativeModifier(currentPrice: number, modifier: PriceModifier): number {
-    const modifierValue = modifier.getValue();
-    
-    switch (modifier.getModifierType()) {
-      case ModifierType.MULTIPLIER:
-        return currentPrice * modifierValue;
-        
-      case ModifierType.PERCENTAGE:
-        // Процентные мультипликативные модификаторы: +10% = *1.1
-        return currentPrice * (1 + modifierValue / 100);
-        
-      default:
-        throw new Error(`Неверный тип мультипликативного модификатора: ${modifier.getModifierType()}`);
-    }
-  }
+
 }

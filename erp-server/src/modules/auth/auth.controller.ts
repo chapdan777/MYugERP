@@ -65,7 +65,7 @@ export class AuthController {
     // Временная заглушка для демонстрации структуры
     // const user = await this.authService.validateUser(loginDto.username, loginDto.password);
     
-    // Заглушка с тестовыми данными
+    // Заглушка с тестовыми данными - принимаем любые credentials
     const mockUser = {
       id: 1,
       username: loginDto.username,

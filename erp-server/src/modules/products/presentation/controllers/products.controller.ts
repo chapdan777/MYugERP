@@ -10,6 +10,7 @@ import {
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductRequestDto } from '../dto/update-product-request.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
+import { SetProductPropertiesDto } from '../dtos/set-product-properties.dto';
 import { ProductCategory } from '../../domain/enums/product-category.enum';
 import {
   CreateProductUseCase,
@@ -19,6 +20,8 @@ import {
   ActivateProductUseCase,
   DeactivateProductUseCase,
 } from '../../application/use-cases';
+import { SetProductPropertiesUseCase } from '../../application/use-cases/set-product-properties.use-case';
+import { GetProductPropertiesUseCase } from '../../application/use-cases/get-product-properties.use-case';
 
 /**
  * REST API контроллер для управления продуктами
@@ -34,6 +37,8 @@ export class ProductsController {
     private readonly updateProductUseCase: UpdateProductUseCase,
     private readonly activateProductUseCase: ActivateProductUseCase,
     private readonly deactivateProductUseCase: DeactivateProductUseCase,
+    private readonly setProductPropertiesUseCase: SetProductPropertiesUseCase,
+    private readonly getProductPropertiesUseCase: GetProductPropertiesUseCase,
   ) {}
 
   /**
@@ -169,5 +174,68 @@ export class ProductsController {
   async deactivate(@Param('id', ParseIntPipe) id: number): Promise<ProductResponseDto> {
     const product = await this.deactivateProductUseCase.execute(id);
     return ProductResponseDto.fromDomain(product);
+  }
+
+  /**
+   * Установка свойств продукта
+   */
+  @Put(':id/properties')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Установить свойства продукта' })
+  @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
+  @ApiBody({ type: SetProductPropertiesDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Свойства продукта успешно установлены'
+  })
+  @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
+  @ApiResponse({ status: 404, description: 'Продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+  async setProperties(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetProductPropertiesDto,
+  ): Promise<void> {
+    await this.setProductPropertiesUseCase.execute({
+      productId: id,
+      properties: dto.properties,
+    });
+  }
+
+  /**
+   * Получение свойств продукта
+   */
+  @Get(':id/properties')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Получить свойства продукта' })
+  @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Свойства продукта получены',
+    schema: {
+      type: 'object',
+      properties: {
+        properties: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              propertyId: { type: 'number' },
+              isRequired: { type: 'boolean' },
+              displayOrder: { type: 'number' },
+              createdAt: { type: 'string', format: 'date-time' },
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  async getProperties(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return await this.getProductPropertiesUseCase.execute(id);
   }
 }

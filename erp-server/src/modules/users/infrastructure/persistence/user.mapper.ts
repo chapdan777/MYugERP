@@ -1,7 +1,7 @@
-import { User } from '../../domain/entities/user.entity';
-import { UserEntity } from './user.entity';
-import { Email, Phone } from '../../domain/value-objects';
-import { UserRole } from '../../domain/enums';
+import { User } from "../../domain/entities/user.entity";
+import { UserEntity } from "./user.entity";
+import { Email, Phone } from "../../domain/value-objects";
+import { UserRole } from "../../domain/enums";
 
 /**
  * Mapper для преобразования между доменной моделью User и TypeORM Entity
@@ -15,11 +15,32 @@ export class UserMapper {
     const email = entity.email ? Email.create(entity.email) : null;
     const phone = entity.phone ? Phone.create(entity.phone) : null;
 
+    // Преобразуем строковое значение роли в enum
+    let role: UserRole;
+    switch (entity.role) {
+      case 'admin':
+        role = UserRole.ADMIN;
+        break;
+      case 'manager':
+        role = UserRole.MANAGER;
+        break;
+      case 'worker':
+        role = UserRole.WORKER;
+        break;
+      case 'client':
+        role = UserRole.CLIENT;
+        break;
+      default:
+        // Если роль не распознана, используем CLIENT как fallback
+        role = UserRole.CLIENT;
+        console.warn(`Неизвестная роль пользователя: ${entity.role}. Установлена роль CLIENT.`);
+    }
+
     return User.restore({
       id: entity.id,
       username: entity.username,
       passwordHash: entity.passwordHash,
-      role: entity.role as UserRole,
+      role: role,
       fullName: entity.fullName,
       email,
       phone,

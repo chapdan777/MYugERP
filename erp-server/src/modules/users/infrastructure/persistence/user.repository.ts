@@ -59,12 +59,26 @@ export class UserRepository implements IUserRepository {
   }
 
   async existsByUsername(username: string): Promise<boolean> {
-    const count = await this.repository.count({ where: { username } });
+    // Проверяем только активных и неудаленных пользователей
+    const count = await this.repository.count({ 
+      where: { 
+        username, 
+        isActive: true, 
+        isDeleted: false 
+      } 
+    });
     return count > 0;
   }
 
   async existsByEmail(email: string): Promise<boolean> {
-    const count = await this.repository.count({ where: { email } });
+    // Проверяем только активных и неудаленных пользователей
+    const count = await this.repository.count({ 
+      where: { 
+        email, 
+        isActive: true, 
+        isDeleted: false 
+      } 
+    });
     return count > 0;
   }
 

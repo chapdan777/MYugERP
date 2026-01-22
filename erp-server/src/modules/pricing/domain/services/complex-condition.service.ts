@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConditionParserService } from './condition-parser.service';
 import { ConditionEvaluatorService } from './condition-evaluator.service';
 import { DomainException } from '../../../../common/exceptions/domain.exception';
-import {
-  ParseResult,
-  EvaluationResult,
-  ConditionEvaluationContext,
-} from '../types/condition.types';
+import { ConditionEvaluationContext } from '../types/condition.types';
 
 /**
  * Сервис для работы со сложными условиями фильтрации
@@ -17,7 +13,10 @@ export class ComplexConditionService {
   constructor(
     private readonly parser: ConditionParserService,
     private readonly evaluator: ConditionEvaluatorService,
-  ) {}
+  ) {
+    // ParseResult и EvaluationResult используются в сигнатурах методов
+    // parser.parse() и evaluator.evaluate()
+  }
 
   /**
    * Проверяет, удовлетворяет ли набор свойств условию

@@ -73,3 +73,19 @@ export interface PriceModifierResponseDto {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Класс для Swagger документации
+export class PriceModifierResponseDtoSwagger {
+  id!: number;
+  name!: string;
+  code!: string;
+  modifierType!: ModifierType;
+  value!: number;
+  propertyId!: number | null;
+  propertyValue!: string | null;
+  conditionExpression!: string | null;
+  priority!: number;
+  isActive!: boolean;
+  createdAt!: Date;
+  updatedAt!: Date;
+}

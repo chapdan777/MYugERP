@@ -15,7 +15,7 @@ export const typeOrmConfig: DataSourceOptions = {
   username: process.env.DATABASE_USERNAME || 'postgres',
   password: process.env.DATABASE_PASSWORD || 'postgres',
   database: process.env.DATABASE_NAME || 'erp_production',
-  entities: [__dirname + '/../../modules/**/infrastructure/persistence/*.entity{.ts,.js}'],
+  entities: [__dirname + '/../../modules/**/infrastructure/persistence/*.entity{.ts,.js}', __dirname + '/../../modules/properties/infrastructure/persistence/property-value.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false, // ВАЖНО: всегда false в production, используем миграции
   logging: process.env.DATABASE_LOGGING === 'true',

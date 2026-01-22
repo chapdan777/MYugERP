@@ -1,0 +1,35 @@
+import { PropertyValue } from '../../domain/entities/property-value.entity';
+import { PropertyValueEntity } from './property-value.entity';
+
+export class PropertyValueMapper {
+  static toDomain(entity: PropertyValueEntity): PropertyValue {
+    return PropertyValue.restore({
+      id: entity.id,
+      propertyId: entity.propertyId,
+      value: entity.value,
+      priceModifierId: entity.priceModifierId,
+      displayOrder: entity.displayOrder,
+      isActive: entity.isActive,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    });
+  }
+
+  static toPersistence(domain: PropertyValue): PropertyValueEntity {
+    const entity = new PropertyValueEntity();
+    
+    if (domain.getId()) {
+      entity.id = domain.getId()!;
+    }
+    
+    entity.propertyId = domain.getPropertyId();
+    entity.value = domain.getValue();
+    entity.priceModifierId = domain.getPriceModifierId();
+    entity.displayOrder = domain.getDisplayOrder();
+    entity.isActive = domain.getIsActive();
+    entity.createdAt = domain.getCreatedAt();
+    entity.updatedAt = domain.getUpdatedAt();
+    
+    return entity;
+  }
+}
