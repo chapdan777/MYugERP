@@ -9,9 +9,6 @@ export class PropertyHeaderItemEntity {
   @PrimaryColumn()
   propertyId!: number;
 
-  @Column({ type: 'text' })
-  value!: string;
-
   @Column({ type: 'integer', default: 0 })
   sortOrder!: number;
 

@@ -6,4 +6,5 @@ export { ActivatePropertyHeaderUseCase } from './activate-property-header.use-ca
 export { DeactivatePropertyHeaderUseCase } from './deactivate-property-header.use-case';
 export { AddItemToHeaderUseCase } from './add-item-to-header.use-case';
 export { GetHeaderItemsUseCase } from './get-header-items.use-case';
+export { RemoveItemFromHeaderUseCase } from './remove-item-from-header.use-case';
 export { DeletePropertyHeaderUseCase } from './delete-property-header.use-case';

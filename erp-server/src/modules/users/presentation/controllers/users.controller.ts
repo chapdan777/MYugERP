@@ -26,7 +26,7 @@ import { CreateUserDto, UpdateUserProfileDto, ChangeUserRoleDto, UserResponseDto
 import {
   CreateUserUseCase,
   GetUserByIdUseCase,
-  GetAllActiveUsersUseCase,
+  GetAllNotDeletedUsersUseCase,
   UpdateUserProfileUseCase,
   ChangeUserRoleUseCase,
   ActivateUserUseCase,
@@ -44,7 +44,7 @@ export class UsersController {
   constructor(
     private readonly createUserUseCase: CreateUserUseCase,
     private readonly getUserByIdUseCase: GetUserByIdUseCase,
-    private readonly getAllActiveUsersUseCase: GetAllActiveUsersUseCase,
+    private readonly getAllNotDeletedUsersUseCase: GetAllNotDeletedUsersUseCase,
     private readonly updateUserProfileUseCase: UpdateUserProfileUseCase,
     private readonly changeUserRoleUseCase: ChangeUserRoleUseCase,
     private readonly activateUserUseCase: ActivateUserUseCase,
@@ -71,7 +71,7 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Получить список всех активных пользователей' })
+  @ApiOperation({ summary: 'Получить список всех неудаленных пользователей' })
   @ApiResponse({ 
     status: 200, 
     description: 'Список пользователей успешно получен', 
@@ -80,7 +80,7 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Неавторизован' })
   @ApiResponse({ status: 403, description: 'Доступ запрещен' })
   async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.getAllActiveUsersUseCase.execute();
+    const users = await this.getAllNotDeletedUsersUseCase.execute();
     return UserResponseDto.fromDomainList(users);
   }
 

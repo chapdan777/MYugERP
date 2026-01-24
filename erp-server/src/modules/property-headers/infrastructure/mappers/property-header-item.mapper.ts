@@ -9,7 +9,6 @@ export class PropertyHeaderItemMapper {
     return PropertyHeaderItem.restore({
       headerId: entity.headerId,
       propertyId: entity.propertyId,
-      value: entity.value,
       sortOrder: entity.sortOrder,
       createdAt: entity.createdAt,
     });
@@ -19,7 +18,6 @@ export class PropertyHeaderItemMapper {
     const entity = new PropertyHeaderItemEntity();
     entity.headerId = domain.getHeaderId();
     entity.propertyId = domain.getPropertyId();
-    entity.value = domain.getValue();
     entity.sortOrder = domain.getSortOrder();
     entity.createdAt = domain.getCreatedAt();
     return entity;

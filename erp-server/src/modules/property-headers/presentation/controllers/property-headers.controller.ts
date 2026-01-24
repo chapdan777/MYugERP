@@ -7,8 +7,12 @@ import { UpdatePropertyHeaderUseCase } from '../../application/use-cases/update-
 import { ActivatePropertyHeaderUseCase } from '../../application/use-cases/activate-property-header.use-case';
 import { DeactivatePropertyHeaderUseCase } from '../../application/use-cases/deactivate-property-header.use-case';
 import { DeletePropertyHeaderUseCase } from '../../application/use-cases/delete-property-header.use-case';
+import { AddItemToHeaderUseCase } from '../../application/use-cases/add-item-to-header.use-case';
+import { GetHeaderItemsUseCase } from '../../application/use-cases/get-header-items.use-case';
+import { RemoveItemFromHeaderUseCase } from '../../application/use-cases/remove-item-from-header.use-case';
 import { CreatePropertyHeaderDto } from '../../application/dto/create-property-header.dto';
 import { UpdatePropertyHeaderDto } from '../../application/dto/update-property-header.dto';
+import { AddItemToHeaderDto } from '../../application/dto/add-item-to-header.dto';
 
 @ApiTags('property-headers')
 @Controller('property-headers')
@@ -21,6 +25,9 @@ export class PropertyHeadersController {
     private readonly activatePropertyHeaderUseCase: ActivatePropertyHeaderUseCase,
     private readonly deactivatePropertyHeaderUseCase: DeactivatePropertyHeaderUseCase,
     private readonly deletePropertyHeaderUseCase: DeletePropertyHeaderUseCase,
+    private readonly addItemToHeaderUseCase: AddItemToHeaderUseCase,
+    private readonly getHeaderItemsUseCase: GetHeaderItemsUseCase,
+    private readonly removeItemFromHeaderUseCase: RemoveItemFromHeaderUseCase,
   ) {}
 
   @Post()
@@ -85,5 +92,35 @@ export class PropertyHeadersController {
   @ApiResponse({ status: 404, description: 'Шапка не найдена' })
   async delete(@Param('id', ParseIntPipe) id: number) {
     await this.deletePropertyHeaderUseCase.execute(id);
+  }
+
+  @Get(':id/items')
+  @ApiOperation({ summary: 'Получить элементы шапки' })
+  @ApiResponse({ status: 200, description: 'Список элементов шапки' })
+  @ApiResponse({ status: 404, description: 'Шапка не найдена' })
+  async getItems(@Param('id', ParseIntPipe) id: number) {
+    return await this.getHeaderItemsUseCase.execute(id);
+  }
+
+  @Post(':id/items')
+  @ApiOperation({ summary: 'Добавить элемент в шапку' })
+  @ApiResponse({ status: 201, description: 'Элемент успешно добавлен' })
+  @ApiResponse({ status: 404, description: 'Шапка не найдена' })
+  async addItem(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddItemToHeaderDto,
+  ) {
+    return await this.addItemToHeaderUseCase.execute(id, dto);
+  }
+
+  @Delete(':id/items/:propertyId')
+  @ApiOperation({ summary: 'Удалить элемент из шапки' })
+  @ApiResponse({ status: 204, description: 'Элемент успешно удален' })
+  @ApiResponse({ status: 404, description: 'Элемент не найден' })
+  async removeItem(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('propertyId', ParseIntPipe) propertyId: number,
+  ) {
+    await this.removeItemFromHeaderUseCase.execute(id, propertyId);
   }
 }

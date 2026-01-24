@@ -99,12 +99,11 @@ export class PropertyHeaderService {
   }
 
   /**
-   * Добавление элемента в шапку
+   * Добавление элемента в шапку (только связь со свойством)
    */
   async addItemToHeader(props: {
     headerId: number;
     propertyId: number;
-    value: string;
     sortOrder?: number;
   }): Promise<PropertyHeaderItem> {
     // Проверка существования шапки
@@ -122,7 +121,11 @@ export class PropertyHeaderService {
       throw new DomainException(`Свойство с ID ${props.propertyId} уже добавлено в эту шапку`);
     }
 
-    const item = PropertyHeaderItem.create(props);
+    const item = PropertyHeaderItem.create({
+      headerId: props.headerId,
+      propertyId: props.propertyId,
+      sortOrder: props.sortOrder,
+    });
     
     // Если указан порядок, устанавливаем его
     if (props.sortOrder !== undefined) {
@@ -139,18 +142,7 @@ export class PropertyHeaderService {
     return await this.propertyHeaderItemRepository.save(item);
   }
 
-  /**
-   * Обновление значения элемента шапки
-   */
-  async updateItemValue(headerId: number, propertyId: number, newValue: string): Promise<PropertyHeaderItem> {
-    const item = await this.propertyHeaderItemRepository.findByHeaderIdAndPropertyId(headerId, propertyId);
-    if (!item) {
-      throw new DomainException(`Элемент шапки для свойства ${propertyId} не найден`);
-    }
 
-    item.updateValue(newValue);
-    return await this.propertyHeaderItemRepository.save(item);
-  }
 
   /**
    * Удаление элемента из шапки

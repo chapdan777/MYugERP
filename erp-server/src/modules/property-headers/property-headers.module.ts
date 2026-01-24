@@ -13,6 +13,7 @@ import {
   DeactivatePropertyHeaderUseCase,
   AddItemToHeaderUseCase,
   GetHeaderItemsUseCase,
+  RemoveItemFromHeaderUseCase,
   DeletePropertyHeaderUseCase,
 } from './application/use-cases';
 
@@ -51,6 +52,7 @@ import { PropertyHeaderEntity, PropertyHeaderItemEntity } from './infrastructure
     DeactivatePropertyHeaderUseCase,
     AddItemToHeaderUseCase,
     GetHeaderItemsUseCase,
+    RemoveItemFromHeaderUseCase,
     DeletePropertyHeaderUseCase,
 
     // Repositories
@@ -82,6 +84,7 @@ import { PropertyHeaderEntity, PropertyHeaderItemEntity } from './infrastructure
     DeactivatePropertyHeaderUseCase,
     AddItemToHeaderUseCase,
     GetHeaderItemsUseCase,
+    RemoveItemFromHeaderUseCase,
     DeletePropertyHeaderUseCase,
   ],
 })
