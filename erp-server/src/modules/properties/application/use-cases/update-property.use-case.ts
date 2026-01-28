@@ -5,6 +5,7 @@ import { Property } from '../../domain/entities/property.entity';
 
 export interface UpdatePropertyDto {
   name?: string;
+  code?: string;
   possibleValues?: string[];
   defaultValue?: string;
   isRequired?: boolean;
@@ -16,11 +17,11 @@ export class UpdatePropertyUseCase {
   constructor(
     @Inject(PROPERTY_REPOSITORY)
     private readonly propertyRepository: IPropertyRepository,
-  ) {}
+  ) { }
 
   async execute(id: number, dto: UpdatePropertyDto): Promise<Property> {
     const property = await this.propertyRepository.findById(id);
-    
+
     if (!property) {
       throw new NotFoundException(`Свойство с ID ${id} не найдено`);
     }
@@ -28,6 +29,7 @@ export class UpdatePropertyUseCase {
     // Обновление через доменный метод updateInfo
     property.updateInfo({
       name: dto.name,
+      code: dto.code,
       possibleValues: dto.possibleValues,
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,

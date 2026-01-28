@@ -15,12 +15,26 @@ class CreateOrderItemDto {
   @IsOptional()
   @IsInt()
   width?: number;
+
+  @IsString()
+  unit!: string;
+
+  @IsOptional()
+  @IsArray()
+  properties?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
 }
 
 class CreateOrderSectionDto {
+  @IsNumber()
+  sectionNumber!: number;
+
   @IsString()
   @IsNotEmpty()
   sectionName!: string;
+
+  @IsOptional()
+  @IsArray()
+  propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -29,20 +43,20 @@ class CreateOrderSectionDto {
 }
 
 export class CreateOrderDto {
-  @IsString()
-  @IsNotEmpty()
-  typeOrder!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  nameOrder!: string;
-
   @IsUUID()
-  clientId!: string;
+  clientId!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  clientName!: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  deadline?: Date;
 
   @IsString()
   @IsOptional()
-  note?: string;
+  notes?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

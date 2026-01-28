@@ -14,7 +14,7 @@ export class PropertyDependencyRepository implements IPropertyDependencyReposito
   constructor(
     @InjectRepository(PropertyDependencyEntity)
     private readonly repository: Repository<PropertyDependencyEntity>,
-  ) {}
+  ) { }
 
   async save(dependency: PropertyDependency): Promise<PropertyDependency> {
     const entity = PropertyDependencyMapper.toPersistence(dependency);
@@ -29,14 +29,14 @@ export class PropertyDependencyRepository implements IPropertyDependencyReposito
 
   async findBySourcePropertyId(sourcePropertyId: number): Promise<PropertyDependency[]> {
     const entities = await this.repository.find({
-      where: { sourcePropertyId, isActive: true },
+      where: { sourcePropertyId },
     });
     return PropertyDependencyMapper.toDomainList(entities);
   }
 
   async findByTargetPropertyId(targetPropertyId: number): Promise<PropertyDependency[]> {
     const entities = await this.repository.find({
-      where: { targetPropertyId, isActive: true },
+      where: { targetPropertyId },
     });
     return PropertyDependencyMapper.toDomainList(entities);
   }

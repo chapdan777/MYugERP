@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PropertiesController } from './presentation/controllers/properties.controller';
 import { PropertyValuesController } from './presentation/controllers/property-values.controller';
+import { PropertyDependenciesController } from './presentation/property-dependencies.controller';
 
 // UseCases
 import { CreatePropertyUseCase } from './application/use-cases/create-property.use-case';
@@ -13,21 +14,26 @@ import { ActivatePropertyUseCase } from './application/use-cases/activate-proper
 import { DeactivatePropertyUseCase } from './application/use-cases/deactivate-property.use-case';
 import { CreatePropertyValueUseCase } from './application/use-cases/create-property-value.use-case';
 import { GetPropertyValuesByPropertyIdUseCase } from './application/use-cases/get-property-values-by-property-id.use-case';
+import { DeletePropertyDependencyUseCase } from './application/use-cases/delete-property-dependency.use-case';
+import { CreatePropertyDependencyUseCase } from './application/use-cases/create-property-dependency.use-case';
+import { GetDependenciesForPropertyUseCase } from './application/use-cases/get-dependencies-for-property.use-case';
 
 // Repositories
 import { PropertyRepository } from './infrastructure/persistence/property.repository';
 import { PropertyValueRepository } from './infrastructure/persistence/property-value.repository';
-import { PROPERTY_REPOSITORY, PROPERTY_VALUE_REPOSITORY } from './domain/repositories/injection-tokens';
+import { PropertyDependencyRepository } from './infrastructure/persistence/property-dependency.repository';
+import { PROPERTY_REPOSITORY, PROPERTY_VALUE_REPOSITORY, PROPERTY_DEPENDENCY_REPOSITORY } from './domain/repositories/injection-tokens';
 
 // Entities
 import { PropertyEntity } from './infrastructure/persistence/property.entity';
 import { PropertyValueEntity } from './infrastructure/persistence/property-value.entity';
+import { PropertyDependencyEntity } from './infrastructure/persistence/property-dependency.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PropertyEntity, PropertyValueEntity]),
+    TypeOrmModule.forFeature([PropertyEntity, PropertyValueEntity, PropertyDependencyEntity]),
   ],
-  controllers: [PropertiesController, PropertyValuesController],
+  controllers: [PropertiesController, PropertyValuesController, PropertyDependenciesController],
   providers: [
     // UseCases
     CreatePropertyUseCase,
@@ -39,7 +45,10 @@ import { PropertyValueEntity } from './infrastructure/persistence/property-value
     DeactivatePropertyUseCase,
     CreatePropertyValueUseCase,
     GetPropertyValuesByPropertyIdUseCase,
-    
+    DeletePropertyDependencyUseCase,
+    CreatePropertyDependencyUseCase,
+    GetDependenciesForPropertyUseCase,
+
     // Repositories
     {
       provide: PROPERTY_REPOSITORY,
@@ -48,6 +57,10 @@ import { PropertyValueEntity } from './infrastructure/persistence/property-value
     {
       provide: PROPERTY_VALUE_REPOSITORY,
       useClass: PropertyValueRepository,
+    },
+    {
+      provide: PROPERTY_DEPENDENCY_REPOSITORY,
+      useClass: PropertyDependencyRepository,
     },
   ],
   exports: [
@@ -60,4 +73,4 @@ import { PropertyValueEntity } from './infrastructure/persistence/property-value
     DeactivatePropertyUseCase,
   ],
 })
-export class PropertiesModule {}
+export class PropertiesModule { }

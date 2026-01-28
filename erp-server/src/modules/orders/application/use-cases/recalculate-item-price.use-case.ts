@@ -1,8 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { Order } from '../../domain/entities/order.entity';
 import { IOrderRepository, ORDER_REPOSITORY } from '../../domain/repositories/order.repository.interface';
-import { PriceCalculationService } from '../../../pricing/domain/services/price-calculation.service';
-import { PriceCalculationContext } from '../../../pricing/domain/services/price-calculation.types';
+import { CalculatePriceUseCase } from '../../../pricing/application/use-cases/calculate-price.use-case';
 
 export interface RecalculateItemPriceDto {
   orderId: number;
@@ -19,8 +18,8 @@ export class RecalculateItemPriceUseCase {
   constructor(
     @Inject(ORDER_REPOSITORY)
     private readonly orderRepository: IOrderRepository,
-    private readonly priceCalculationService: PriceCalculationService,
-  ) {}
+    private readonly calculatePriceUseCase: CalculatePriceUseCase,
+  ) { }
 
   async execute(dto: RecalculateItemPriceDto): Promise<Order> {
     // 1. Fetch the order
@@ -46,26 +45,23 @@ export class RecalculateItemPriceUseCase {
     }
 
     // 4. Build property values map for price calculation
-    const propertyValues = new Map<number, string>();
-    for (const prop of item.getProperties()) {
-      propertyValues.set(prop.getPropertyId(), prop.getValue());
-    }
+    const propertyValues = item.getProperties().map(p => ({
+      propertyId: p.getPropertyId(),
+      propertyValue: p.getValue()
+    }));
 
-    // 5. Calculate new price using PriceCalculationService
-    const calculationContext: PriceCalculationContext = {
+    // 5. Calculate new price using CalculatePriceUseCase
+    const result = await this.calculatePriceUseCase.execute({
       basePrice: item.getBasePrice(),
-      propertyValues,
       quantity: item.getQuantity(),
-      unit: item.getUnit(),
+      unitType: 'unit', // TODO: Add unit mapping
+      propertyValues,
       coefficient: item.getCoefficient(),
-    };
-
-    const result = await this.priceCalculationService.calculatePrice(
-      calculationContext,
-    );
+      productId: item.getProductId(), // Using public getter
+    });
 
     // 6. Update item prices
-    item.updatePrices(result.finalPrice, result.totalPrice);
+    item.updatePrices(result.finalPrice / item.getQuantity(), result.finalPrice);
 
     // 7. Recalculate order total
     order.calculateTotalAmount();

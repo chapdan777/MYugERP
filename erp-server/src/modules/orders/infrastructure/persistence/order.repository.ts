@@ -11,7 +11,7 @@ export class OrderRepository implements IOrderRepository {
   constructor(
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
-  ) {}
+  ) { }
 
   async save(order: Order): Promise<Order> {
     const orderEntity = OrderMapper.toPersistence(order);
@@ -20,12 +20,12 @@ export class OrderRepository implements IOrderRepository {
   }
 
   async findById(id: number): Promise<Order | null> {
-    const orderEntity = await this.orderRepository.findOne({ where: { id }, relations: ['sections', 'sections.items'] });
+    const orderEntity = await this.orderRepository.findOne({ where: { id }, relations: ['sections', 'sections.items', 'sections.items.properties'] });
     return orderEntity ? OrderMapper.toDomain(orderEntity) : null;
   }
 
   async findByOrderNumber(orderNumber: string): Promise<Order | null> {
-    const orderEntity = await this.orderRepository.findOne({ where: { orderNumber }, relations: ['sections', 'sections.items'] });
+    const orderEntity = await this.orderRepository.findOne({ where: { orderNumber }, relations: ['sections', 'sections.items', 'sections.items.properties'] });
     return orderEntity ? OrderMapper.toDomain(orderEntity) : null;
   }
 
@@ -40,7 +40,7 @@ export class OrderRepository implements IOrderRepository {
     fromDate?: Date;
     toDate?: Date;
   }): Promise<Order[]> {
-    const orderEntities = await this.orderRepository.find({ where: filters, relations: ['sections', 'sections.items'] });
+    const orderEntities = await this.orderRepository.find({ where: filters, relations: ['sections', 'sections.items', 'sections.items.properties'] });
     return orderEntities.map(OrderMapper.toDomain);
   }
 

@@ -1,7 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import { PropertyInOrderEntity } from './property-in-order.entity';
 
 @Entity('order_items')
 export class OrderItemEntity {
+  // ... existing code ...
+
+  @OneToMany(() => PropertyInOrderEntity, property => property.orderItem, { cascade: true })
+  properties!: PropertyInOrderEntity[];
+
+  // ... existing code ...
+
   @PrimaryGeneratedColumn()
   id!: number;
 

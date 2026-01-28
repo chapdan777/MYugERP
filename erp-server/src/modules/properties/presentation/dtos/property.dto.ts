@@ -34,6 +34,10 @@ export class UpdatePropertyRequestDto {
   name?: string;
 
   @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   possibleValues?: string[];

@@ -15,32 +15,54 @@ import {
   GetHeaderItemsUseCase,
   RemoveItemFromHeaderUseCase,
   DeletePropertyHeaderUseCase,
+  UpdateHeaderItemUseCase,
+  AddProductToHeaderUseCase,
+  RemoveProductFromHeaderUseCase,
+  GetHeaderProductsUseCase,
 } from './application/use-cases';
 
 // Repositories
-import { PropertyHeaderRepository, PropertyHeaderItemRepository } from './infrastructure/repositories';
+import {
+  PropertyHeaderRepository,
+  PropertyHeaderItemRepository,
+  PropertyHeaderProductRepository,
+} from './infrastructure/repositories';
 import {
   PROPERTY_HEADER_REPOSITORY,
   PROPERTY_HEADER_ITEM_REPOSITORY,
+  PROPERTY_HEADER_PRODUCT_REPOSITORY,
 } from './domain/repositories';
 
 // Entities
-import { PropertyHeaderEntity, PropertyHeaderItemEntity } from './infrastructure/persistence';
+import {
+  PropertyHeaderEntity,
+  PropertyHeaderItemEntity,
+  PropertyHeaderProductEntity,
+} from './infrastructure/persistence';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PropertyHeaderEntity, PropertyHeaderItemEntity]),
+    TypeOrmModule.forFeature([
+      PropertyHeaderEntity,
+      PropertyHeaderItemEntity,
+      PropertyHeaderProductEntity,
+    ]),
   ],
   controllers: [PropertyHeadersController, PropertyHeaderItemsController],
   providers: [
     // Domain Services
     {
       provide: PropertyHeaderService,
-      useFactory: (deps: any) => new PropertyHeaderService(
-        deps.propertyHeaderRepository,
-        deps.propertyHeaderItemRepository
+      useFactory: (propertyHeaderRepo, propertyHeaderItemRepo, propertyHeaderProductRepo) => new PropertyHeaderService(
+        propertyHeaderRepo,
+        propertyHeaderItemRepo,
+        propertyHeaderProductRepo,
       ),
-      inject: ['PropertyHeaderServiceDependencies'],
+      inject: [
+        PROPERTY_HEADER_REPOSITORY,
+        PROPERTY_HEADER_ITEM_REPOSITORY,
+        PROPERTY_HEADER_PRODUCT_REPOSITORY,
+      ],
     },
 
     // UseCases
@@ -54,6 +76,10 @@ import { PropertyHeaderEntity, PropertyHeaderItemEntity } from './infrastructure
     GetHeaderItemsUseCase,
     RemoveItemFromHeaderUseCase,
     DeletePropertyHeaderUseCase,
+    UpdateHeaderItemUseCase,
+    AddProductToHeaderUseCase,
+    RemoveProductFromHeaderUseCase,
+    GetHeaderProductsUseCase,
 
     // Repositories
     {
@@ -64,15 +90,24 @@ import { PropertyHeaderEntity, PropertyHeaderItemEntity } from './infrastructure
       provide: PROPERTY_HEADER_ITEM_REPOSITORY,
       useClass: PropertyHeaderItemRepository,
     },
-    
+    {
+      provide: PROPERTY_HEADER_PRODUCT_REPOSITORY,
+      useClass: PropertyHeaderProductRepository,
+    },
+
     // Service dependencies
     {
       provide: 'PropertyHeaderServiceDependencies',
-      useFactory: (propertyHeaderRepo, propertyHeaderItemRepo) => ({
+      useFactory: (propertyHeaderRepo, propertyHeaderItemRepo, propertyHeaderProductRepo) => ({
         propertyHeaderRepository: propertyHeaderRepo,
         propertyHeaderItemRepository: propertyHeaderItemRepo,
+        propertyHeaderProductRepository: propertyHeaderProductRepo,
       }),
-      inject: [PROPERTY_HEADER_REPOSITORY, PROPERTY_HEADER_ITEM_REPOSITORY],
+      inject: [
+        PROPERTY_HEADER_REPOSITORY,
+        PROPERTY_HEADER_ITEM_REPOSITORY,
+        PROPERTY_HEADER_PRODUCT_REPOSITORY,
+      ],
     },
   ],
   exports: [
@@ -86,6 +121,10 @@ import { PropertyHeaderEntity, PropertyHeaderItemEntity } from './infrastructure
     GetHeaderItemsUseCase,
     RemoveItemFromHeaderUseCase,
     DeletePropertyHeaderUseCase,
+    UpdateHeaderItemUseCase,
+    AddProductToHeaderUseCase,
+    RemoveProductFromHeaderUseCase,
+    GetHeaderProductsUseCase,
   ],
 })
-export class PropertyHeadersModule {}
+export class PropertyHeadersModule { }

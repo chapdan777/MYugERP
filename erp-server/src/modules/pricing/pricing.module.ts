@@ -43,6 +43,7 @@ import { ProductPriceCalculatorService } from './domain/services/product-price-c
   ],
   exports: [
     PRICE_MODIFIER_REPOSITORY,
+    CalculatePriceUseCase,
   ],
 })
-export class PricingModule {}
+export class PricingModule { }

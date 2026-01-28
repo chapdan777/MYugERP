@@ -121,6 +121,7 @@ export class Property {
    */
   updateInfo(props: {
     name?: string;
+    code?: string;
     possibleValues?: string[] | null;
     defaultValue?: string | null;
     isRequired?: boolean;
@@ -128,6 +129,13 @@ export class Property {
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
+    }
+
+    if (props.code !== undefined) {
+      if (props.code.trim().length === 0) {
+        throw new DomainException('Код свойства не может быть пустым');
+      }
+      this.code = props.code;
     }
 
     if (props.possibleValues !== undefined) {

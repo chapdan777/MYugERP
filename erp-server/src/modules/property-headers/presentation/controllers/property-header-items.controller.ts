@@ -2,7 +2,9 @@ import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AddItemToHeaderUseCase } from '../../application/use-cases/add-item-to-header.use-case';
 import { GetHeaderItemsUseCase } from '../../application/use-cases/get-header-items.use-case';
+import { UpdateHeaderItemUseCase } from '../../application/use-cases/update-header-item.use-case';
 import { AddItemToHeaderDto } from '../../application/dto/add-item-to-header.dto';
+import { UpdateHeaderItemDto } from '../../application/dto/update-header-item.dto';
 
 @ApiTags('property-headers')
 @Controller('property-headers')
@@ -10,7 +12,8 @@ export class PropertyHeaderItemsController {
   constructor(
     private readonly addItemToHeaderUseCase: AddItemToHeaderUseCase,
     private readonly getHeaderItemsUseCase: GetHeaderItemsUseCase,
-  ) {}
+    private readonly updateHeaderItemUseCase: UpdateHeaderItemUseCase,
+  ) { }
 
   @Post(':headerId/items')
   @ApiOperation({ summary: 'Добавить элемент в шапку' })
@@ -30,15 +33,14 @@ export class PropertyHeaderItemsController {
   }
 
   @Put(':headerId/items/:propertyId')
-  @ApiOperation({ summary: 'Обновить значение элемента шапки' })
+  @ApiOperation({ summary: 'Обновить элемент шапки' })
   @ApiResponse({ status: 200, description: 'Элемент успешно обновлен' })
-  async updateItemValue(
-    @Param('headerId', ParseIntPipe) _headerId: number,
-    @Param('propertyId', ParseIntPipe) _propertyId: number,
-    @Body('value') _value: string,
+  async updateItem(
+    @Param('headerId', ParseIntPipe) headerId: number,
+    @Param('propertyId', ParseIntPipe) propertyId: number,
+    @Body() dto: UpdateHeaderItemDto,
   ) {
-    // Note: This would require a separate use case for updating item values
-    throw new Error('Not implemented yet');
+    return await this.updateHeaderItemUseCase.execute(headerId, propertyId, dto);
   }
 
   @Delete(':headerId/items/:propertyId')

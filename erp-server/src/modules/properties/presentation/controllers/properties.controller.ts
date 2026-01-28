@@ -35,7 +35,7 @@ export class PropertiesController {
     private readonly updatePropertyUseCase: UpdatePropertyUseCase,
     private readonly activatePropertyUseCase: ActivatePropertyUseCase,
     private readonly deactivatePropertyUseCase: DeactivatePropertyUseCase,
-  ) {}
+  ) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -78,6 +78,7 @@ export class PropertiesController {
   ): Promise<PropertyResponseDto> {
     const property = await this.updatePropertyUseCase.execute(id, {
       name: dto.name,
+      code: dto.code,
       possibleValues: dto.possibleValues,
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,

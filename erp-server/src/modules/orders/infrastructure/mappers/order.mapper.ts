@@ -5,6 +5,9 @@ import { OrderSectionEntity } from '../persistence/order-section.entity';
 import { OrderItem } from '../../domain/entities/order-item.entity';
 import { OrderItemEntity } from '../persistence/order-item.entity';
 
+import { PropertyInOrder } from '../../domain/entities/property-in-order.entity';
+import { PropertyInOrderEntity } from '../persistence/property-in-order.entity';
+
 export class OrderMapper {
   static toDomain(entity: OrderEntity): Order {
     return Order.restore({
@@ -20,13 +23,13 @@ export class OrderMapper {
       totalAmount: entity.totalAmount,
       sections: entity.sections.map(section => OrderSection.restore({
         id: section.id,
-        orderId: section.order.id,
+        orderId: section.order?.id || entity.id, // Access nested order id if available
         sectionNumber: section.sectionNumber,
         name: section.name,
         description: section.description || null,
-        items: section.items.map((item: any) => OrderItem.restore({
+        items: section.items?.map((item: any) => OrderItem.restore({
           id: item.id,
-          orderSectionId: item.section.id,
+          orderSectionId: item.section?.id || section.id,
           productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
@@ -35,11 +38,19 @@ export class OrderMapper {
           basePrice: item.basePrice,
           finalPrice: item.finalPrice,
           totalPrice: item.totalPrice,
-          properties: [], // This should be mapped from a real entity if it exists
+          properties: item.properties?.map((prop: any) => PropertyInOrder.restore({
+            id: prop.id,
+            orderItemId: prop.orderItem?.id || item.id,
+            propertyId: prop.propertyId,
+            propertyCode: prop.propertyCode,
+            propertyName: prop.propertyName,
+            value: prop.value,
+            createdAt: prop.createdAt,
+          })) || [],
           notes: item.notes || null,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
-        })),
+        })) || [],
         createdAt: section.createdAt,
         updatedAt: section.updatedAt,
       })),
@@ -78,6 +89,15 @@ export class OrderMapper {
         itemEntity.basePrice = item.getBasePrice();
         itemEntity.finalPrice = item.getFinalPrice();
         itemEntity.totalPrice = item.getTotalPrice();
+        itemEntity.properties = item.getProperties().map(prop => {
+          const propEntity = new PropertyInOrderEntity();
+          propEntity.id = prop.getId()!;
+          propEntity.propertyId = prop.getPropertyId();
+          propEntity.propertyCode = prop.getPropertyCode();
+          propEntity.propertyName = prop.getPropertyName();
+          propEntity.value = prop.getValue();
+          return propEntity;
+        });
         itemEntity.notes = item.getNotes() || undefined;
         return itemEntity;
       });

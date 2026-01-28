@@ -1,15 +1,18 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { CreatePropertyDependencyRequestDto, PropertyDependencyResponseDto } from './dtos/property-dependency.dto';
 import { CreatePropertyDependencyUseCase } from '../application/use-cases/create-property-dependency.use-case';
 import { GetDependenciesForPropertyUseCase } from '../application/use-cases/get-dependencies-for-property.use-case';
 import { PropertyDependency } from '../domain/entities/property-dependency.entity';
+
+import { DeletePropertyDependencyUseCase } from '../application/use-cases/delete-property-dependency.use-case';
 
 @Controller('property-dependencies')
 export class PropertyDependenciesController {
   constructor(
     private readonly createPropertyDependencyUseCase: CreatePropertyDependencyUseCase,
     private readonly getDependenciesForPropertyUseCase: GetDependenciesForPropertyUseCase,
-  ) {}
+    private readonly deletePropertyDependencyUseCase: DeletePropertyDependencyUseCase,
+  ) { }
 
   @Post()
   async create(@Body() dto: CreatePropertyDependencyRequestDto): Promise<PropertyDependencyResponseDto> {
@@ -35,6 +38,11 @@ export class PropertyDependenciesController {
       asSource: result.asSource.map(d => this.mapToResponse(d)),
       asTarget: result.asTarget.map(d => this.mapToResponse(d)),
     };
+  }
+
+  @Delete(':id')
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.deletePropertyDependencyUseCase.execute(id);
   }
 
   private mapToResponse(dependency: PropertyDependency): PropertyDependencyResponseDto {

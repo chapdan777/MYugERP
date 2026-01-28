@@ -8,3 +8,7 @@ export { AddItemToHeaderUseCase } from './add-item-to-header.use-case';
 export { GetHeaderItemsUseCase } from './get-header-items.use-case';
 export { RemoveItemFromHeaderUseCase } from './remove-item-from-header.use-case';
 export { DeletePropertyHeaderUseCase } from './delete-property-header.use-case';
+export { UpdateHeaderItemUseCase } from './update-header-item.use-case';
+export { AddProductToHeaderUseCase } from './add-product-to-header.use-case';
+export { RemoveProductFromHeaderUseCase } from './remove-product-from-header.use-case';
+export { GetHeaderProductsUseCase } from './get-header-products.use-case';

@@ -3,6 +3,8 @@ import { PropertyHeader } from '../entities/property-header.entity';
 import { PropertyHeaderItem } from '../entities/property-header-item.entity';
 import { IPropertyHeaderRepository } from '../repositories/property-header.repository.interface';
 import { IPropertyHeaderItemRepository } from '../repositories/property-header-item.repository.interface';
+import { IPropertyHeaderProductRepository } from '../repositories/property-header-product.repository.interface';
+import { PropertyHeaderProduct } from '../entities/property-header-product.entity';
 
 /**
  * PropertyHeaderService - Сервис для бизнес-логики работы с шапками свойств
@@ -11,7 +13,8 @@ export class PropertyHeaderService {
   constructor(
     private readonly propertyHeaderRepository: IPropertyHeaderRepository,
     private readonly propertyHeaderItemRepository: IPropertyHeaderItemRepository,
-  ) {}
+    private readonly propertyHeaderProductRepository: IPropertyHeaderProductRepository,
+  ) { }
 
   /**
    * Получение всех шапок с фильтрацией
@@ -126,19 +129,19 @@ export class PropertyHeaderService {
       propertyId: props.propertyId,
       sortOrder: props.sortOrder,
     });
-    
+
     // Если указан порядок, устанавливаем его
     if (props.sortOrder !== undefined) {
       item.setSortOrder(props.sortOrder);
     } else {
       // Иначе устанавливаем автоматический порядок
       const existingItems = await this.propertyHeaderItemRepository.findByHeaderId(props.headerId);
-      const maxOrder = existingItems.length > 0 
-        ? Math.max(...existingItems.map(i => i.getSortOrder())) 
+      const maxOrder = existingItems.length > 0
+        ? Math.max(...existingItems.map(i => i.getSortOrder()))
         : 0;
       item.setSortOrder(maxOrder + 1);
     }
-    
+
     return await this.propertyHeaderItemRepository.save(item);
   }
 
@@ -179,8 +182,44 @@ export class PropertyHeaderService {
 
     // Удаляем все элементы шапки
     await this.propertyHeaderItemRepository.deleteByHeaderId(id);
-    
+
     // Удаляем саму шапку
     await this.propertyHeaderRepository.delete(id);
+  }
+  /**
+   * Добавление продукта в шапку
+   */
+  async addProductToHeader(headerId: number, productId: number): Promise<PropertyHeaderProduct> {
+    const header = await this.propertyHeaderRepository.findById(headerId);
+    if (!header) {
+      throw new DomainException(`Шапка с ID ${headerId} не найдена`);
+    }
+
+    const exists = await this.propertyHeaderProductRepository.exists(headerId, productId);
+    if (exists) {
+      throw new DomainException(`Продукт с ID ${productId} уже добавлен в эту шапку`);
+    }
+
+    const item = PropertyHeaderProduct.create({ headerId, productId });
+    return await this.propertyHeaderProductRepository.save(item);
+  }
+
+  /**
+   * Удаление продукта из шапки
+   */
+  async removeProductFromHeader(headerId: number, productId: number): Promise<void> {
+    const header = await this.propertyHeaderRepository.findById(headerId);
+    if (!header) {
+      throw new DomainException(`Шапка с ID ${headerId} не найдена`);
+    }
+
+    await this.propertyHeaderProductRepository.deleteByHeaderIdAndProductId(headerId, productId);
+  }
+
+  /**
+   * Получение продуктов шапки
+   */
+  async getHeaderProducts(headerId: number): Promise<PropertyHeaderProduct[]> {
+    return await this.propertyHeaderProductRepository.findByHeaderId(headerId);
   }
 }
