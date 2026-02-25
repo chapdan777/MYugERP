@@ -19,6 +19,9 @@ export class ProductMapper {
       description: entity.description,
       basePrice: Number(entity.basePrice),
       unit: UnitOfMeasure.create(entity.unit),
+      defaultLength: entity.defaultLength ? Number(entity.defaultLength) : null,
+      defaultWidth: entity.defaultWidth ? Number(entity.defaultWidth) : null,
+      defaultDepth: entity.defaultDepth ? Number(entity.defaultDepth) : null,
       isActive: entity.isActive,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -30,17 +33,20 @@ export class ProductMapper {
    */
   static toPersistence(domain: Product): ProductEntity {
     const entity = new ProductEntity();
-    
+
     if (domain.getId()) {
       entity.id = domain.getId()!;
     }
-    
+
     entity.name = domain.getName();
     entity.code = domain.getCode();
     entity.category = domain.getCategory();
     entity.description = domain.getDescription();
     entity.basePrice = domain.getBasePrice();
     entity.unit = domain.getUnit().getValue();
+    entity.defaultLength = domain.getDefaultLength();
+    entity.defaultWidth = domain.getDefaultWidth();
+    entity.defaultDepth = domain.getDefaultDepth();
     entity.isActive = domain.getIsActive();
     entity.createdAt = domain.getCreatedAt();
     entity.updatedAt = domain.getUpdatedAt();

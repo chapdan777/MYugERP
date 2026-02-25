@@ -23,4 +23,16 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   unit!: string;
+
+  @IsNumber()
+  @IsOptional()
+  defaultLength?: number;
+
+  @IsNumber()
+  @IsOptional()
+  defaultWidth?: number;
+
+  @IsNumber()
+  @IsOptional()
+  defaultDepth?: number;
 }

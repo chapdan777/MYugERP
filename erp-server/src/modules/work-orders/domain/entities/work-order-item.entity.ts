@@ -25,6 +25,7 @@ export class WorkOrderItem {
   private estimatedHours: number; // From OperationRate × quantity
   private pieceRate: number; // From OperationRate for salary calculation
   private actualHours: number | null; // Filled when work is completed
+  private calculatedMaterials: string | null; // JSON with calculated materials
   private createdAt: Date;
   private updatedAt: Date;
 
@@ -41,6 +42,7 @@ export class WorkOrderItem {
     estimatedHours: number,
     pieceRate: number,
     actualHours: number | null,
+    calculatedMaterials: string | null,
     createdAt: Date,
     updatedAt: Date,
   ) {
@@ -56,6 +58,7 @@ export class WorkOrderItem {
     this.estimatedHours = estimatedHours;
     this.pieceRate = pieceRate;
     this.actualHours = actualHours;
+    this.calculatedMaterials = calculatedMaterials;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -74,12 +77,18 @@ export class WorkOrderItem {
     unit: string;
     estimatedHours: number;
     pieceRate: number;
+    calculatedMaterials?: Record<string, unknown> | Array<unknown> | null;
   }): WorkOrderItem {
     WorkOrderItem.validateQuantity(props.quantity);
     WorkOrderItem.validateEstimatedHours(props.estimatedHours);
     WorkOrderItem.validatePieceRate(props.pieceRate);
 
     const now = new Date();
+
+    // Serialize materials if provided
+    const materialsJson = props.calculatedMaterials
+      ? JSON.stringify(props.calculatedMaterials)
+      : null;
 
     return new WorkOrderItem(
       undefined,
@@ -94,6 +103,7 @@ export class WorkOrderItem {
       props.estimatedHours,
       props.pieceRate,
       null, // actualHours starts as null
+      materialsJson,
       now,
       now,
     );
@@ -115,6 +125,7 @@ export class WorkOrderItem {
     estimatedHours: number,
     pieceRate: number,
     actualHours: number | null,
+    calculatedMaterials: string | null,
     createdAt: Date,
     updatedAt: Date,
   ): WorkOrderItem {
@@ -131,6 +142,7 @@ export class WorkOrderItem {
       estimatedHours,
       pieceRate,
       actualHours,
+      calculatedMaterials,
       createdAt,
       updatedAt,
     );
@@ -233,6 +245,15 @@ export class WorkOrderItem {
 
   getActualHours(): number | null {
     return this.actualHours;
+  }
+
+  getCalculatedMaterials(): Record<string, unknown> | Array<unknown> | null {
+    if (!this.calculatedMaterials) return null;
+    try {
+      return JSON.parse(this.calculatedMaterials);
+    } catch {
+      return null;
+    }
   }
 
   getCreatedAt(): Date {

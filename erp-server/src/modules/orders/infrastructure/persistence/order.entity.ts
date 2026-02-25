@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, DeleteDateColumn } from 'typeorm';
 
 @Entity('orders')
 export class OrderEntity {
@@ -32,7 +32,7 @@ export class OrderEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   totalAmount!: number;
 
-  @OneToMany('OrderSectionEntity', 'order', { cascade: true })
+  @OneToMany('OrderSectionEntity', 'order', { cascade: true, orphanedRowAction: 'delete' })
   sections!: any[];
 
   @Column({ type: 'text', nullable: true })
@@ -43,4 +43,7 @@ export class OrderEntity {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt!: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  deletedAt?: Date;
 }

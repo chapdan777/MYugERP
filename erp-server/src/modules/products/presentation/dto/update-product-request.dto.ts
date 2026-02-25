@@ -26,4 +26,16 @@ export class UpdateProductRequestDto {
   @IsEnum(ProductCategory)
   @IsOptional()
   category?: ProductCategory;
+
+  @IsNumber()
+  @IsOptional()
+  defaultLength?: number;
+
+  @IsNumber()
+  @IsOptional()
+  defaultWidth?: number;
+
+  @IsNumber()
+  @IsOptional()
+  defaultDepth?: number;
 }

@@ -1,11 +1,15 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { WorkOrder } from '../entities/work-order.entity';
 import { WorkOrderItem } from '../entities/work-order-item.entity';
 import { IWorkOrderRepository, WORK_ORDER_REPOSITORY } from '../repositories/work-order.repository.interface';
+import type { IOrderItemComponentRepository } from '../../../production/domain/repositories/order-item-component.repository.interface';
+import { ORDER_ITEM_COMPONENT_REPOSITORY } from '../../../production/domain/repositories/order-item-component.repository.interface';
 import { DomainException } from '../../../../common/exceptions/domain.exception';
+import { ComponentGenerationService } from '../../../production/domain/services/component-generation.service';
+import { FormulaEvaluatorService } from '../../../common/services/formula-evaluator.service';
 
 /**
- * Input data structures for work order generation
+ * Входные данные для генерации заказ-нарядов
  */
 
 export interface OrderItemForGeneration {
@@ -14,7 +18,11 @@ export interface OrderItemForGeneration {
   productName: string;
   quantity: number;
   unit: string;
+  width: number;
+  height: number;
+  depth?: number;
   propertyValues: Map<number, number>; // Map<propertyId, propertyValueId>
+  propertiesVariableMap: Record<string, any>; // Map<variableName, value> для формул
 }
 
 export interface OperationStepForGeneration {
@@ -38,6 +46,22 @@ export interface DepartmentForOperation {
   priority: number;
 }
 
+export interface OperationMaterialForGeneration {
+  operationId: number;
+  productId?: number;
+  materialId: number;
+  materialName: string;
+  consumptionFormula: string;
+  unit: string;
+}
+
+export interface ComponentSchemaForGeneration {
+  name: string;
+  lengthFormula: string;
+  widthFormula: string;
+  quantityFormula: string;
+}
+
 export interface OrderDataForGeneration {
   orderId: number;
   orderNumber: string;
@@ -46,79 +70,124 @@ export interface OrderDataForGeneration {
 }
 
 /**
- * WorkOrderGenerationService - Domain Service
+ * WorkOrderGenerationService - Доменный сервис
  * 
- * Responsible for generating work orders from orders by:
- * 1. Building technological routes for each product
- * 2. Calculating estimated hours and piece rates
- * 3. Creating work orders for each operation
- * 4. Selecting appropriate departments
- * 5. Calculating priorities based on deadline
- * 
- * This is a complex domain service that orchestrates multiple aggregates
- * and domain logic to produce work orders.
+ * Отвечает за генерацию заказ-нарядов из заказа путем:
+ * 1. Построения технологических маршрутов для каждого изделия
+ * 2. Расчета нормативной трудоемкости и сдельной оплаты
+ * 3. Расчета необходимых материалов (на основе формул)
+ * 4. Декомпозиции изделий на компоненты (детали)
+ * 5. Создания заказ-нарядов
  */
 @Injectable()
 export class WorkOrderGenerationService {
+  private readonly logger = new Logger(WorkOrderGenerationService.name);
+
   constructor(
     @Inject(WORK_ORDER_REPOSITORY)
     private readonly workOrderRepository: IWorkOrderRepository,
-  ) {}
+    @Inject(ORDER_ITEM_COMPONENT_REPOSITORY)
+    private readonly orderItemComponentRepository: IOrderItemComponentRepository,
+    private readonly componentGenerationService: ComponentGenerationService,
+    private readonly formulaEvaluator: FormulaEvaluatorService,
+  ) { }
 
   /**
-   * Generate work orders from an order
-   * Returns array of created work orders
+   * Сгенерировать заказ-наряды для заказа
+   * Возвращает массив созданных заказ-нарядов
    */
   async generateWorkOrders(input: {
     orderData: OrderDataForGeneration;
     operationSteps: Map<number, OperationStepForGeneration[]>; // Map<productId, steps[]>
     operationRates: OperationRateForGeneration[];
     departmentsByOperation: Map<number, DepartmentForOperation[]>; // Map<operationId, departments[]>
+    operationMaterials: OperationMaterialForGeneration[];
+    componentSchemas: Map<number, ComponentSchemaForGeneration[]>; // Map<productId, schemas[]>
   }): Promise<WorkOrder[]> {
-    const { orderData, operationSteps, operationRates, departmentsByOperation } = input;
+    const { orderData, operationSteps, operationRates, departmentsByOperation, operationMaterials, componentSchemas } = input;
 
-    // Validate input
+    // Валидация входных данных
     this.validateInput(orderData, operationSteps, departmentsByOperation);
 
     const workOrders: WorkOrder[] = [];
 
-    // Calculate priority based on deadline
+    // Расчет приоритета на основе дедлайна
     const priority = this.calculatePriorityFromDeadline(orderData.deadline);
 
-    // Group items by operation (we'll handle grouping strategy later in task 3.10)
-    // For now, create one work order per operation per item
     for (const item of orderData.items) {
+      // 1. Декомпозиция изделия на компоненты
+      const schemas = componentSchemas.get(item.productId) || [];
+      if (schemas.length > 0) {
+        try {
+          const components = this.componentGenerationService.generateComponents(
+            {
+              id: item.id,
+              width: item.width,
+              height: item.height,
+              depth: item.depth,
+              properties: item.propertiesVariableMap
+            },
+            schemas
+          );
+
+          // Сохраняем сгенерированные компоненты
+          await this.orderItemComponentRepository.deleteByOrderItemId(item.id);
+          for (const component of components) {
+            await this.orderItemComponentRepository.save(component);
+            this.logger.debug(`Saved component ${component.getName()} for item ${item.id}`);
+          }
+
+          this.logger.log(`Сгенерировано и сохранено ${components.length} компонентов для позиции ${item.id}`);
+        } catch (e: any) {
+          this.logger.error(`Ошибка генерации компонентов для позиции ${item.id}: ${e.message}`);
+        }
+      }
+
       const steps = operationSteps.get(item.productId);
       if (!steps || steps.length === 0) {
         throw new DomainException(
-          `No technological route found for product ${item.productId}`,
+          `Не найден технологический маршрут для продукта ${item.productId}`,
         );
       }
 
-      // Create work order for each operation
+      // Создание заказ-наряда для каждой операции
       for (const step of steps) {
-        // Find appropriate department
+        // Skip operationId=0 - это псевдо-операция для "material-only" маршрутов
+        // Материалы будут связаны через другую операцию или рассчитаны отдельно
+        if (step.operationId === 0) {
+          this.logger.debug(`Пропущена операция 0 (material-only) для продукта ${item.productId}`);
+          continue;
+        }
+
+        // Поиск подходящего участка
         const departments = departmentsByOperation.get(step.operationId);
         if (!departments || departments.length === 0) {
           throw new DomainException(
-            `No department found for operation ${step.operationId}`,
+            `Не найден участок для операции ${step.operationId}`,
           );
         }
 
-        // Select department with highest priority
+        // Выбор участка с наивысшим приоритетом
         const selectedDepartment = this.selectOptimalDepartment(departments);
 
-        // Calculate estimated hours and piece rate
+        // Расчет трудоемкости и зарплаты
         const { estimatedHours, pieceRate } = this.calculateOperationMetrics(
           item,
           step.operationId,
           operationRates,
         );
 
-        // Generate work order number
+        // Расчет материалов для операции
+        const calculatedMaterials = this.calculateOperationMaterials(
+          item,
+          step.operationId,
+          operationMaterials
+        );
+
+        // Генерация номера ЗН
         const workOrderNumber = await this.workOrderRepository.generateWorkOrderNumber();
 
-        // Create work order
+        // Создание заказ-наряда
         const workOrder = WorkOrder.create({
           workOrderNumber,
           orderId: orderData.orderId,
@@ -131,9 +200,9 @@ export class WorkOrderGenerationService {
           deadline: orderData.deadline,
         });
 
-        // Create work order item
+        // Создание позиции заказ-наряда
         const workOrderItem = WorkOrderItem.create({
-          workOrderId: 0, // Will be set after saving
+          workOrderId: 0,
           orderItemId: item.id,
           productId: item.productId,
           productName: item.productName,
@@ -143,12 +212,20 @@ export class WorkOrderGenerationService {
           unit: item.unit,
           estimatedHours,
           pieceRate,
+          calculatedMaterials: {
+            materials: calculatedMaterials,
+            dimensions: {
+              width: item.width,
+              height: item.height,
+              depth: item.depth || 0,
+            }
+          },
         });
 
-        // Add item to work order
+        // Добавление позиции
         workOrder.addItem(workOrderItem);
 
-        // Save work order
+        // Сохранение
         const savedWorkOrder = await this.workOrderRepository.save(workOrder);
         workOrders.push(savedWorkOrder);
       }
@@ -158,30 +235,60 @@ export class WorkOrderGenerationService {
   }
 
   /**
-   * Calculate priority (1-10) based on order deadline
-   * Closer deadline = higher priority
+   * Расчет материалов для операции на основе формул
+   */
+  private calculateOperationMaterials(
+    item: OrderItemForGeneration,
+    operationId: number,
+    materials: OperationMaterialForGeneration[]
+  ): any[] {
+    const result: any[] = [];
+    const applicableMaterials = materials.filter(m =>
+      m.operationId === operationId &&
+      (!m.productId || m.productId === item.productId)
+    );
+
+    // Контекст для формул (габариты + переменные свойства)
+    const context = {
+      H: item.height,
+      W: item.width,
+      D: item.depth || 0,
+      Q: item.quantity,
+      ...item.propertiesVariableMap
+    };
+
+    for (const mat of applicableMaterials) {
+      try {
+        const quantityPerUnit = this.formulaEvaluator.evaluate(mat.consumptionFormula, context);
+        const totalQuantity = quantityPerUnit * item.quantity;
+
+        if (totalQuantity > 0) {
+          result.push({
+            materialId: mat.materialId,
+            materialName: mat.materialName,
+            quantity: totalQuantity,
+            unit: mat.unit
+          });
+        }
+      } catch (e: any) {
+        this.logger.error(`Ошибка расчета материала ${mat.materialName} для операции ${operationId}: ${e.message}`);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Расчет приоритета (1-10) на основе дедлайна
    */
   private calculatePriorityFromDeadline(deadline: Date | null): number {
     if (!deadline) {
-      return 5; // Default medium priority
+      return 5; // Средний приоритет
     }
 
     const now = new Date();
     const daysUntilDeadline = Math.ceil(
       (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     );
-
-    // Priority scale:
-    // <= 0 days (overdue): 10 (urgent)
-    // 1-3 days: 9
-    // 4-7 days: 8
-    // 8-14 days: 7
-    // 15-21 days: 6
-    // 22-30 days: 5
-    // 31-60 days: 4
-    // 61-90 days: 3
-    // 91-180 days: 2
-    // > 180 days: 1
 
     if (daysUntilDeadline <= 0) return 10;
     if (daysUntilDeadline <= 3) return 9;
@@ -196,30 +303,23 @@ export class WorkOrderGenerationService {
   }
 
   /**
-   * Select optimal department for an operation
-   * Currently selects by priority, can be extended with workload balancing
+   * Выбор оптимального участка
    */
   private selectOptimalDepartment(
     departments: DepartmentForOperation[],
   ): DepartmentForOperation {
-    // Sort by priority (highest first)
     const sorted = [...departments].sort((a, b) => b.priority - a.priority);
-    
-    // Return highest priority department
-    // In future, can add workload balancing logic here
     return sorted[0];
   }
 
   /**
-   * Calculate estimated hours and piece rate for an item/operation combination
+   * Расчет трудоемкости и сдельной оплаты
    */
   private calculateOperationMetrics(
     item: OrderItemForGeneration,
     operationId: number,
     operationRates: OperationRateForGeneration[],
   ): { estimatedHours: number; pieceRate: number } {
-    // Find applicable rates
-    // Priority: specific property value rate > general rate
     let specificRate: OperationRateForGeneration | undefined;
     let generalRate: OperationRateForGeneration | undefined;
 
@@ -229,7 +329,6 @@ export class WorkOrderGenerationService {
       if (rate.propertyValueId === null) {
         generalRate = rate;
       } else {
-        // Check if this property value matches the item
         for (const [, propertyValueId] of item.propertyValues) {
           if (propertyValueId === rate.propertyValueId) {
             specificRate = rate;
@@ -239,18 +338,15 @@ export class WorkOrderGenerationService {
       }
     }
 
-    // Use specific rate if available, otherwise general rate
     const applicableRate = specificRate || generalRate;
 
     if (!applicableRate) {
-      // No rate found, use defaults
       return {
         estimatedHours: 0,
         pieceRate: 0,
       };
     }
 
-    // Calculate metrics
     const estimatedHours = applicableRate.timePerUnit * item.quantity;
     const pieceRate = applicableRate.ratePerUnit;
 
@@ -261,7 +357,7 @@ export class WorkOrderGenerationService {
   }
 
   /**
-   * Validate input data
+   * Валидация входных данных
    */
   private validateInput(
     orderData: OrderDataForGeneration,
@@ -269,20 +365,20 @@ export class WorkOrderGenerationService {
     departmentsByOperation: Map<number, DepartmentForOperation[]>,
   ): void {
     if (!orderData || !orderData.items || orderData.items.length === 0) {
-      throw new DomainException('Order must have at least one item');
+      throw new DomainException('Заказ должен содержать хотя бы одну позицию');
     }
 
     if (!operationSteps || operationSteps.size === 0) {
-      throw new DomainException('Operation steps must be provided');
+      throw new DomainException('Необходимо предоставить этапы операций');
     }
 
     if (!departmentsByOperation || departmentsByOperation.size === 0) {
-      throw new DomainException('Department mappings must be provided');
+      throw new DomainException('Необходимо предоставить маппинг участков');
     }
   }
 
   /**
-   * Check if work orders can be generated for an order
+   * Проверка возможности генерации заказ-нарядов
    */
   canGenerateWorkOrders(orderData: OrderDataForGeneration): {
     canGenerate: boolean;
@@ -307,8 +403,7 @@ export class WorkOrderGenerationService {
   }
 
   /**
-   * Regenerate work orders for an order
-   * Cancels existing work orders and creates new ones
+   * Перегенерация заказ-нарядов
    */
   async regenerateWorkOrders(
     orderId: number,
@@ -317,20 +412,19 @@ export class WorkOrderGenerationService {
       operationSteps: Map<number, OperationStepForGeneration[]>;
       operationRates: OperationRateForGeneration[];
       departmentsByOperation: Map<number, DepartmentForOperation[]>;
+      operationMaterials: OperationMaterialForGeneration[];
+      componentSchemas: Map<number, ComponentSchemaForGeneration[]>;
     },
   ): Promise<WorkOrder[]> {
-    // Find existing work orders
     const existingWorkOrders = await this.workOrderRepository.findByOrderId(orderId);
 
-    // Cancel work orders that are not completed
     for (const workOrder of existingWorkOrders) {
       if (!workOrder.isCompleted() && !workOrder.isCancelled()) {
-        workOrder.cancel('Regenerating work orders for updated order');
+        workOrder.cancel('Перегенерация заказ-нарядов из-за обновления заказа');
         await this.workOrderRepository.save(workOrder);
       }
     }
 
-    // Generate new work orders
     return await this.generateWorkOrders(input);
   }
 }

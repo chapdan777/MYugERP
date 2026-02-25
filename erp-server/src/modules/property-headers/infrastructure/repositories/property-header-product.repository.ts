@@ -24,7 +24,10 @@ export class PropertyHeaderProductRepository implements IPropertyHeaderProductRe
     }
 
     async findByHeaderId(headerId: number): Promise<PropertyHeaderProduct[]> {
-        const entities = await this.repository.find({ where: { headerId } });
+        const entities = await this.repository.find({
+            where: { headerId },
+            relations: ['product']
+        });
         return entities.map(PropertyHeaderProductMapper.toDomain);
     }
 

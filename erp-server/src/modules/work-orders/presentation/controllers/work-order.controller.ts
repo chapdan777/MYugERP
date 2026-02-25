@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Inject,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { IWorkOrderRepository, WORK_ORDER_REPOSITORY } from '../../domain/repositories/work-order.repository.interface';
 import { WorkOrderStateMachineService } from '../../domain/services/work-order-state-machine.service';
 import { WorkOrderPriorityService } from '../../domain/services/work-order-priority.service';
@@ -23,6 +24,20 @@ import {
   WorkOrderListQueryDto,
 } from '../dtos/work-order.dto';
 
+import { GenerateWorkOrdersUseCase } from '../../application/use-cases/generate-work-orders.use-case';
+// ... other imports
+import { IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class GenerateWorkOrdersDto {
+  @ApiProperty({ description: 'ID заказа для генерации заказ-нарядов', example: 1 })
+  @IsNumber()
+  @Type(() => Number)
+  orderId!: number;
+}
+
+@ApiTags('work-orders')
+@ApiBearerAuth('JWT-auth')
 @Controller('work-orders')
 export class WorkOrderController {
   constructor(
@@ -30,23 +45,27 @@ export class WorkOrderController {
     private readonly workOrderRepository: IWorkOrderRepository,
     private readonly stateMachineService: WorkOrderStateMachineService,
     private readonly priorityService: WorkOrderPriorityService,
-  ) {}
+    private readonly generateUseCase: GenerateWorkOrdersUseCase,
+  ) { }
 
   /**
    * Generate work orders from an order
    */
   @Post('generate')
+  @ApiOperation({ summary: 'Генерация заказ-нарядов из заказа' })
+  @ApiResponse({ status: 201, description: 'Заказ-наряды успешно сгенерированы', type: [WorkOrderResponseDto] })
   @HttpCode(HttpStatus.CREATED)
-  async generateWorkOrders(): Promise<WorkOrderResponseDto[]> {
-    // This would be implemented as a use case
-    // For now, return empty array as placeholder
-    throw new Error('Not implemented - requires GenerateWorkOrdersUseCase');
+  async generateWorkOrders(@Body() dto: GenerateWorkOrdersDto): Promise<WorkOrderResponseDto[]> {
+    const workOrders = await this.generateUseCase.execute(dto.orderId);
+    return workOrders.map(wo => WorkOrderResponseDto.fromEntity(wo));
   }
 
   /**
    * Get all work orders with optional filtering
    */
   @Get()
+  @ApiOperation({ summary: 'Получить список заказ-нарядов с фильтрацией' })
+  @ApiResponse({ status: 200, description: 'Список заказ-нарядов', type: [WorkOrderResponseDto] })
   async findAll(@Query() query: WorkOrderListQueryDto): Promise<WorkOrderResponseDto[]> {
     let workOrders;
 
@@ -86,6 +105,8 @@ export class WorkOrderController {
    * Get work order by ID
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Получить заказ-наряд по ID' })
+  @ApiResponse({ status: 200, description: 'Заказ-наряд найден', type: WorkOrderResponseDto })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<WorkOrderResponseDto> {
     const workOrder = await this.workOrderRepository.findById(id);
     if (!workOrder) {
@@ -98,6 +119,8 @@ export class WorkOrderController {
    * Assign work order (transition to ASSIGNED)
    */
   @Post(':id/assign')
+  @ApiOperation({ summary: 'Назначить заказ-наряд (перевод в ASSIGNED)' })
+  @ApiResponse({ status: 200, description: 'Статус обновлен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async assign(@Param('id', ParseIntPipe) id: number): Promise<WorkOrderResponseDto> {
     const workOrder = await this.workOrderRepository.findById(id);
@@ -114,6 +137,8 @@ export class WorkOrderController {
    * Start work order (transition to IN_PROGRESS)
    */
   @Post(':id/start')
+  @ApiOperation({ summary: 'Начать выполнение (перевод в IN_PROGRESS)' })
+  @ApiResponse({ status: 200, description: 'Статус обновлен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async start(@Param('id', ParseIntPipe) id: number): Promise<WorkOrderResponseDto> {
     const workOrder = await this.workOrderRepository.findById(id);
@@ -130,6 +155,8 @@ export class WorkOrderController {
    * Send work order to quality check
    */
   @Post(':id/quality-check')
+  @ApiOperation({ summary: 'Отправить на проверку качества (перевод в QUALITY_CHECK)' })
+  @ApiResponse({ status: 200, description: 'Статус обновлен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async sendToQualityCheck(
     @Param('id', ParseIntPipe) id: number,
@@ -148,6 +175,8 @@ export class WorkOrderController {
    * Complete work order (after quality check passed)
    */
   @Post(':id/complete')
+  @ApiOperation({ summary: 'Завершить выполнение (перевод в COMPLETED)' })
+  @ApiResponse({ status: 200, description: 'Статус обновлен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async complete(@Param('id', ParseIntPipe) id: number): Promise<WorkOrderResponseDto> {
     const workOrder = await this.workOrderRepository.findById(id);
@@ -164,6 +193,8 @@ export class WorkOrderController {
    * Cancel work order
    */
   @Post(':id/cancel')
+  @ApiOperation({ summary: 'Отменить заказ-наряд' })
+  @ApiResponse({ status: 200, description: 'Статус обновлен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async cancel(
     @Param('id', ParseIntPipe) id: number,
@@ -183,6 +214,8 @@ export class WorkOrderController {
    * Update work order notes
    */
   @Put(':id/notes')
+  @ApiOperation({ summary: 'Обновить заметки' })
+  @ApiResponse({ status: 200, description: 'Заметки обновлены', type: WorkOrderResponseDto })
   async updateNotes(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWorkOrderNotesDto,
@@ -201,6 +234,8 @@ export class WorkOrderController {
    * Override work order priority
    */
   @Post(':id/priority-override')
+  @ApiOperation({ summary: 'Переопределить приоритет' })
+  @ApiResponse({ status: 200, description: 'Приоритет обновлен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async overridePriority(
     @Param('id', ParseIntPipe) id: number,
@@ -226,6 +261,8 @@ export class WorkOrderController {
    * Clear priority override
    */
   @Post(':id/priority-override/clear')
+  @ApiOperation({ summary: 'Сбросить переопределение приоритета' })
+  @ApiResponse({ status: 200, description: 'Приоритет сброшен', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async clearPriorityOverride(
     @Param('id', ParseIntPipe) id: number,
@@ -244,6 +281,8 @@ export class WorkOrderController {
    * Record actual hours for a work order item
    */
   @Post(':id/actual-hours')
+  @ApiOperation({ summary: 'Записать фактические часы' })
+  @ApiResponse({ status: 200, description: 'Часы записаны', type: WorkOrderResponseDto })
   @HttpCode(HttpStatus.OK)
   async recordActualHours(
     @Param('id', ParseIntPipe) id: number,
@@ -306,7 +345,7 @@ export class WorkOrderController {
   ): Promise<ReturnType<WorkOrderPriorityService['getPriorityStats']>> {
     // Get filtered work orders
     let workOrders;
-    
+
     if (query.departmentId) {
       workOrders = await this.workOrderRepository.findByDepartmentId(query.departmentId);
     } else if (query.status) {

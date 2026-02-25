@@ -55,9 +55,6 @@ export class PropertyInOrder {
   }
 
   private validate(): void {
-    if (this.orderItemId <= 0) {
-      throw new DomainException('ID позиции заказа должен быть положительным');
-    }
     if (this.propertyId <= 0) {
       throw new DomainException('ID свойства должен быть положительным');
     }

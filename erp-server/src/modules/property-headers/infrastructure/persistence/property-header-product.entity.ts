@@ -1,8 +1,6 @@
 import { Entity, PrimaryColumn, CreateDateColumn, JoinColumn, ManyToOne } from 'typeorm';
 import { PropertyHeaderEntity } from './property-header.entity';
-// Assuming ProductEntity is available in products module, but usually in TypeORM cross-module relations are tricky.
-// We can define just the ID columns or use loose coupling.
-// Given the requirements, we need at least the persistence mapping.
+import { ProductEntity } from '../../../products/infrastructure/persistence/product.entity';
 
 @Entity('property_header_products')
 export class PropertyHeaderProductEntity {
@@ -18,4 +16,8 @@ export class PropertyHeaderProductEntity {
     @ManyToOne(() => PropertyHeaderEntity, (header) => header.id, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'header_id' })
     header!: PropertyHeaderEntity;
+
+    @ManyToOne(() => ProductEntity, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'product_id' })
+    product?: ProductEntity;
 }

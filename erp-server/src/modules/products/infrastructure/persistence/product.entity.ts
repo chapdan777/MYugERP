@@ -29,6 +29,15 @@ export class ProductEntity {
   @Column({ type: 'varchar', length: 20 })
   unit!: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  defaultLength!: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  defaultWidth!: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  defaultDepth!: number | null;
+
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 

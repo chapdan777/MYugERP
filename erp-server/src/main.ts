@@ -9,9 +9,9 @@ import { AppModule } from './app.module';
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  
+
   const configService = app.get(ConfigService);
-  
+
   // Глобальная валидация с class-validator
   app.useGlobalPipes(
     new ValidationPipe({
@@ -21,18 +21,23 @@ async function bootstrap(): Promise<void> {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      exceptionFactory: (errors) => {
+        console.error('Validation Errors:', JSON.stringify(errors, null, 2));
+        const { BadRequestException } = require('@nestjs/common');
+        return new BadRequestException(errors);
+      }
     }),
   );
-  
+
   // CORS для фронтенда
   app.enableCors({
     origin: true, // TODO: Указать конкретные домены в production
     credentials: true,
   });
-  
+
   // Глобальный префикс API
   app.setGlobalPrefix('api');
-  
+
   // Swagger API Documentation
   const config = new DocumentBuilder()
     .setTitle('Production ERP API')
@@ -62,7 +67,7 @@ async function bootstrap(): Promise<void> {
       'JWT-auth',
     )
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
@@ -71,10 +76,10 @@ async function bootstrap(): Promise<void> {
       operationsSorter: 'alpha',
     },
   });
-  
+
   const port = configService.get<number>('app.port', 3000);
   await app.listen(port);
-  
+
   console.log(`✅ ERP-сервер запущен на порту: ${port}`);
   console.log(`📡 API доступен по адресу: http://localhost:${port}/api`);
   console.log(`📚 API документация: http://localhost:${port}/api/docs`);

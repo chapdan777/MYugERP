@@ -9,9 +9,12 @@ export class OrderItem {
   private orderSectionId: number;
   private productId: number;
   private productName: string;
+  private length?: number;
+  private width?: number;
+  private depth?: number;
   private quantity: number;
-  private unit: number; // Единицы измерения (м², м, шт)
-  private coefficient: number; // Коэффициент для расчета цены
+  private unit: number;
+  private coefficient: number;
   private basePrice: number;
   private finalPrice: number;
   private totalPrice: number;
@@ -26,6 +29,9 @@ export class OrderItem {
     productId: number;
     productName: string;
     quantity: number;
+    length?: number;
+    width?: number;
+    depth?: number;
     unit: number;
     coefficient?: number;
     basePrice: number;
@@ -41,6 +47,9 @@ export class OrderItem {
     this.productId = props.productId;
     this.productName = props.productName;
     this.quantity = props.quantity;
+    this.length = props.length;
+    this.width = props.width;
+    this.depth = props.depth;
     this.unit = props.unit;
     this.coefficient = props.coefficient ?? 1;
     this.basePrice = props.basePrice;
@@ -59,6 +68,9 @@ export class OrderItem {
     productId: number;
     productName: string;
     quantity: number;
+    length?: number;
+    width?: number;
+    depth?: number;
     unit: number;
     coefficient?: number;
     basePrice: number;
@@ -73,6 +85,9 @@ export class OrderItem {
     productId: number;
     productName: string;
     quantity: number;
+    length?: number;
+    width?: number;
+    depth?: number;
     unit: number;
     coefficient: number;
     basePrice: number;
@@ -87,9 +102,6 @@ export class OrderItem {
   }
 
   private validate(): void {
-    if (this.orderSectionId <= 0) {
-      throw new DomainException('ID секции заказа должен быть положительным');
-    }
     if (this.productId <= 0) {
       throw new DomainException('ID продукта должен быть положительным');
     }
@@ -107,11 +119,7 @@ export class OrderItem {
     }
   }
 
-  /**
-   * Добавление свойства к позиции
-   */
   addProperty(property: PropertyInOrder): void {
-    // Проверка, что свойство не дублируется
     const exists = this.properties.some(p => p.getPropertyId() === property.getPropertyId());
     if (exists) {
       throw new DomainException(`Свойство ${property.getPropertyCode()} уже добавлено к позиции`);
@@ -121,9 +129,6 @@ export class OrderItem {
     this.updatedAt = new Date();
   }
 
-  /**
-   * Обновление цен после расчета
-   */
   updatePrices(finalPrice: number, totalPrice: number): void {
     if (finalPrice < 0 || totalPrice < 0) {
       throw new DomainException('Цены не могут быть отрицательными');
@@ -134,9 +139,6 @@ export class OrderItem {
     this.updatedAt = new Date();
   }
 
-  /**
-   * Обновление количества
-   */
   updateQuantity(quantity: number): void {
     if (quantity <= 0) {
       throw new DomainException('Количество должно быть положительным');
@@ -147,9 +149,6 @@ export class OrderItem {
     this.updatedAt = new Date();
   }
 
-  /**
-   * Обновление заметок
-   */
   updateNotes(notes: string | null): void {
     this.notes = notes;
     this.updatedAt = new Date();
@@ -174,6 +173,18 @@ export class OrderItem {
 
   getQuantity(): number {
     return this.quantity;
+  }
+
+  getLength(): number | undefined {
+    return this.length;
+  }
+
+  getWidth(): number | undefined {
+    return this.width;
+  }
+
+  getDepth(): number | undefined {
+    return this.depth;
   }
 
   getUnit(): number {

@@ -14,6 +14,9 @@ export class Product {
   private description: string | null;
   private basePrice: number;
   private unit: UnitOfMeasure;
+  private defaultLength: number | null;
+  private defaultWidth: number | null;
+  private defaultDepth: number | null;
   private isActive: boolean;
   private createdAt: Date;
   private updatedAt: Date;
@@ -26,6 +29,9 @@ export class Product {
     description?: string | null;
     basePrice: number;
     unit: UnitOfMeasure;
+    defaultLength?: number | null;
+    defaultWidth?: number | null;
+    defaultDepth?: number | null;
     isActive?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
@@ -37,6 +43,9 @@ export class Product {
     this.description = props.description ?? null;
     this.basePrice = props.basePrice;
     this.unit = props.unit;
+    this.defaultLength = props.defaultLength ?? null;
+    this.defaultWidth = props.defaultWidth ?? null;
+    this.defaultDepth = props.defaultDepth ?? null;
     this.isActive = props.isActive ?? true;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
@@ -69,6 +78,9 @@ export class Product {
     description: string | null;
     basePrice: number;
     unit: UnitOfMeasure;
+    defaultLength?: number | null;
+    defaultWidth?: number | null;
+    defaultDepth?: number | null;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -102,6 +114,9 @@ export class Product {
     basePrice?: number;
     unit?: UnitOfMeasure;
     category?: ProductCategory;
+    defaultLength?: number | null;
+    defaultWidth?: number | null;
+    defaultDepth?: number | null;
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
@@ -124,6 +139,18 @@ export class Product {
 
     if (props.category !== undefined) {
       this.category = props.category;
+    }
+
+    if (props.defaultLength !== undefined) {
+      this.defaultLength = props.defaultLength;
+    }
+
+    if (props.defaultWidth !== undefined) {
+      this.defaultWidth = props.defaultWidth;
+    }
+
+    if (props.defaultDepth !== undefined) {
+      this.defaultDepth = props.defaultDepth;
     }
 
     this.updatedAt = new Date();
@@ -191,5 +218,17 @@ export class Product {
 
   getUpdatedAt(): Date {
     return this.updatedAt;
+  }
+
+  getDefaultLength(): number | null {
+    return this.defaultLength;
+  }
+
+  getDefaultWidth(): number | null {
+    return this.defaultWidth;
+  }
+
+  getDefaultDepth(): number | null {
+    return this.defaultDepth;
   }
 }

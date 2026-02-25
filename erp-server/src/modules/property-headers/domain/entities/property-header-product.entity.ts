@@ -1,4 +1,5 @@
 import { DomainException } from '../../../../common/exceptions/domain.exception';
+import { Product } from '../../../products/domain/entities/product.entity';
 
 /**
  * PropertyHeaderProduct - Сущность связи шапки свойств и продукта
@@ -7,15 +8,18 @@ export class PropertyHeaderProduct {
     private headerId: number;
     private productId: number;
     private createdAt: Date;
+    private product?: Product;
 
     private constructor(props: {
         headerId: number;
         productId: number;
         createdAt?: Date;
+        product?: Product;
     }) {
         this.headerId = props.headerId;
         this.productId = props.productId;
         this.createdAt = props.createdAt ?? new Date();
+        this.product = props.product;
 
         this.validate();
     }
@@ -31,6 +35,7 @@ export class PropertyHeaderProduct {
         headerId: number;
         productId: number;
         createdAt: Date;
+        product?: Product;
     }): PropertyHeaderProduct {
         return new PropertyHeaderProduct(props);
     }
@@ -55,5 +60,9 @@ export class PropertyHeaderProduct {
 
     getCreatedAt(): Date {
         return this.createdAt;
+    }
+
+    getProduct(): Product | undefined {
+        return this.product;
     }
 }

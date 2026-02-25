@@ -6,6 +6,7 @@ import {
   HttpStatus,
   UseGuards,
   Get,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,7 +40,7 @@ interface JwtPayload {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   /**
    * POST /auth/login
@@ -51,39 +52,37 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Аутентификация пользователя' })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Успешная аутентификация', 
-    type: Object 
+  @ApiResponse({
+    status: 200,
+    description: 'Успешная аутентификация',
+    type: Object
   })
   @ApiResponse({ status: 401, description: 'Неверные учетные данные' })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    // TODO: После реализации User модуля, использовать LocalAuthGuard
-    // и получать user из @CurrentUser()
-    
-    // Временная заглушка для демонстрации структуры
-    // const user = await this.authService.validateUser(loginDto.username, loginDto.password);
-    
-    // Заглушка с тестовыми данными - принимаем любые credentials
-    const mockUser = {
-      id: 1,
-      username: loginDto.username,
-      role: 'admin',
-    };
+    const user = await this.authService.validateUser(loginDto.username, loginDto.password);
+
+    if (!user) {
+      throw new UnauthorizedException('Неверные учетные данные');
+    }
+
+    const userId = user.getId();
+    if (!userId) {
+      throw new UnauthorizedException('Ошибка учетной записи');
+    }
 
     const tokens = await this.authService.generateTokens(
-      mockUser.id,
-      mockUser.username,
-      mockUser.role,
+      userId,
+      user.getUsername(),
+      user.getRole(),
     );
 
     return {
       ...tokens,
       user: {
-        id: mockUser.id,
-        username: mockUser.username,
-        role: mockUser.role,
+        id: userId,
+        username: user.getUsername(),
+        role: user.getRole(),
       },
     };
   }
@@ -98,28 +97,23 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Обновить access токен' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Токен успешно обновлен', 
-    type: Object 
+  @ApiResponse({
+    status: 200,
+    description: 'Токен успешно обновлен',
+    type: Object
   })
   @ApiResponse({ status: 401, description: 'Невалидный refresh токен' })
   async refresh(
     @CurrentUser() user: RefreshTokenPayload & { refreshToken: string },
   ): Promise<RefreshResponseDto> {
-    // TODO: После реализации User модуля, проверять refresh token в БД
-    // и возможность его использования (не отозван ли)
-    
-    // Получаем пользователя из БД по ID для актуальной роли
-    // const fullUser = await this.userService.findById(user.sub);
-    
-    // Временная заглушка
-    const mockRole = 'admin';
+
+    // Note: For refresh we rely on the payload data unless we fetch user from DB.
+    // Assuming 'user' role as fallback if not present in token logic extension
 
     const accessToken = await this.authService.refreshAccessToken(
       user.sub,
       user.username,
-      mockRole,
+      'user', // Fallback role
     );
 
     return { accessToken };
@@ -128,22 +122,20 @@ export class AuthController {
   /**
    * POST /auth/logout
    * Выход пользователя из системы
-   * TODO: Реализовать отзыв refresh токена (blacklist или удаление из БД)
    */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Выход из системы' })
   @ApiBearerAuth()
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Успешный выход из системы', 
-    type: Object 
+  @ApiResponse({
+    status: 200,
+    description: 'Успешный выход из системы',
+    type: Object
   })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
   async logout(@CurrentUser() _user: JwtPayload): Promise<{ message: string }> {
-    // TODO: Добавить логику отзыва refresh токена
-    // await this.authService.revokeRefreshToken(user.sub);
-    
+    // Note: Add revocation logic if DB storage implementing
+
     return {
       message: 'Успешный выход из системы',
     };
@@ -157,15 +149,13 @@ export class AuthController {
   @Get('me')
   @ApiOperation({ summary: 'Получить информацию о текущем пользователе' })
   @ApiBearerAuth()
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Информация о пользователе получена', 
-    type: Object 
+  @ApiResponse({
+    status: 200,
+    description: 'Информация о пользователе получена',
+    type: Object
   })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
   async getProfile(@CurrentUser() user: JwtPayload): Promise<JwtPayload> {
-    // TODO: После реализации User модуля, возвращать полную информацию
-    // const fullUser = await this.userService.findById(user.sub);
     return user;
   }
 }

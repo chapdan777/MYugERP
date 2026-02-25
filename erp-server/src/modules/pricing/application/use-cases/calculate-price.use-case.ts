@@ -8,6 +8,9 @@ import { ProductPriceCalculatorService } from '../../domain/services/product-pri
 export interface CalculatePriceDto {
   basePrice: number;
   quantity: number;
+  length?: number;
+  width?: number;
+  depth?: number;
   unitType?: 'm2' | 'linear_meter' | 'unit'; // Тип единицы измерения
   propertyValues: Array<{ propertyId: number; propertyValue: string }>; // Значения свойств
   coefficient?: number; // Дополнительный коэффициент
@@ -41,7 +44,7 @@ export class CalculatePriceUseCase {
     @Inject(PRICE_MODIFIER_REPOSITORY)
     private readonly modifierRepository: IPriceModifierRepository,
     private readonly productPriceCalculator: ProductPriceCalculatorService,
-  ) {}
+  ) { }
 
   async execute(dto: CalculatePriceDto): Promise<CalculatePriceResult> {
     // Если указан productId, используем интеграцию с Product модулем
@@ -49,7 +52,9 @@ export class CalculatePriceUseCase {
       const result = await this.productPriceCalculator.calculatePrice({
         productId: dto.productId,
         quantity: dto.quantity,
-        // TODO: Добавить длину, ширину, глубину из DTO когда будут добавлены
+        length: dto.length,
+        width: dto.width,
+        depth: dto.depth,
         userSelectedProperties: dto.propertyValues.map(pv => ({
           propertyId: pv.propertyId,
           value: pv.propertyValue,
@@ -70,11 +75,11 @@ export class CalculatePriceUseCase {
 
     // Старая логика для обратной совместимости (без productId)
     const allModifiers = await this.modifierRepository.findAllActive();
-    
+
     const propertyMap = new Map<number, string>();
     dto.propertyValues.forEach(pv => propertyMap.set(pv.propertyId, pv.propertyValue));
 
-    let applicableModifiers = allModifiers.filter(modifier => 
+    let applicableModifiers = allModifiers.filter(modifier =>
       modifier.isApplicableFor(propertyMap)
     );
 
@@ -115,30 +120,30 @@ export class CalculatePriceUseCase {
 
   private applyModifier(basePrice: number, modifier: PriceModifier, dto: CalculatePriceDto): number {
     const modifierValue = modifier.getValue();
-    
+
     switch (modifier.getModifierType()) {
       case ModifierType.PERCENTAGE:
         // Процент от базовой цены
         return basePrice * (modifierValue / 100);
-        
+
       case ModifierType.FIXED_PRICE:
         // Заменяет базовую цену полностью
         return modifierValue - basePrice;
-        
+
       case ModifierType.PER_UNIT:
         // Фиксированная сумма за единицу измерения
         // Учитываем тип единицы измерения и количество
         const unitFactor = this.getUnitFactor(dto);
         return modifierValue * unitFactor;
-        
+
       case ModifierType.MULTIPLIER:
         // Множитель к базовой цене
         return basePrice * (modifierValue - 1); // вычитаем 1, чтобы получить разницу
-        
+
       case ModifierType.FIXED_AMOUNT:
         // Фиксированная сумма добавляется/вычитается
         return modifierValue;
-        
+
       default:
         throw new Error(`Неизвестный тип модификатора: ${modifier.getModifierType()}`);
     }

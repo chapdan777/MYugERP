@@ -1,0 +1,58 @@
+{
+    "clientId": 1,
+    "clientName": "",
+    "deadline": "2026-02-05T06:30:09.091Z",
+    "notes": "Заказ: ",
+    "sections": [
+        {
+            "sectionNumber": 1,
+            "sectionName": "Фасадная",
+            "headerId": 3,
+            "propertyValues": [
+                {
+                    "propertyId": 5,
+                    "propertyName": "Модель",
+                    "propertyCode": "модель",
+                    "value": "Алиери"
+                },
+                {
+                    "propertyId": 9,
+                    "propertyName": "Термошов",
+                    "propertyCode": "Termoshov",
+                    "value": "true"
+                },
+                {
+                    "propertyId": 6,
+                    "propertyName": "Материал",
+                    "propertyCode": "Материал",
+                    "value": "Дуб"
+                },
+                {
+                    "propertyId": 8,
+                    "propertyName": "Филенка",
+                    "propertyCode": "Филенка",
+                    "value": "Вероника"
+                },
+                {
+                    "propertyId": 2,
+                    "propertyName": "Цвет",
+                    "propertyCode": "цвет",
+                    "value": "Красный"
+                }
+            ],
+            "items": [
+                {
+                    "productId": 6,
+                    "quantity": 1,
+                    "unit": "м2",
+                    "length": 1000,
+                    "width": 1000,
+                    "depth": 0,
+                    "properties": [],
+                    "basePrice": 1500,
+                    "finalPrice": 1200
+                }
+            ]
+        }
+    ]
+}

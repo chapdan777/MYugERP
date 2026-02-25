@@ -26,12 +26,16 @@ export class OrderMapper {
         orderId: section.order?.id || entity.id, // Access nested order id if available
         sectionNumber: section.sectionNumber,
         name: section.name,
+        headerId: section.headerId || null,
         description: section.description || null,
         items: section.items?.map((item: any) => OrderItem.restore({
           id: item.id,
           orderSectionId: item.section?.id || section.id,
           productId: item.productId,
           productName: item.productName,
+          length: item.length ? Number(item.length) : undefined,
+          width: item.width ? Number(item.width) : undefined,
+          depth: item.depth ? Number(item.depth) : undefined,
           quantity: item.quantity,
           unit: item.unit,
           coefficient: item.coefficient,
@@ -77,12 +81,16 @@ export class OrderMapper {
       sectionEntity.id = section.getId()!;
       sectionEntity.sectionNumber = section.getSectionNumber();
       sectionEntity.name = section.getName();
+      sectionEntity.headerId = section.getHeaderId() || undefined;
       sectionEntity.description = section.getDescription() || undefined;
       sectionEntity.items = section.getItems().map(item => {
         const itemEntity = new OrderItemEntity();
         itemEntity.id = item.getId()!;
         itemEntity.productId = item.getProductId();
         itemEntity.productName = item.getProductName();
+        itemEntity.length = item.getLength();
+        itemEntity.width = item.getWidth();
+        itemEntity.depth = item.getDepth();
         itemEntity.quantity = item.getQuantity();
         itemEntity.unit = item.getUnit();
         itemEntity.coefficient = item.getCoefficient();

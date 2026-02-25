@@ -8,7 +8,7 @@ export class CreateOperationUseCase {
   constructor(
     @Inject(OPERATION_REPOSITORY)
     private readonly operationRepository: IOperationRepository,
-  ) {}
+  ) { }
 
   async execute(dto: CreateOperationDto): Promise<Operation> {
     // Check if operation with this code already exists
@@ -17,11 +17,14 @@ export class CreateOperationUseCase {
       throw new ConflictException(`Operation with code '${dto.code}' already exists`);
     }
 
-    // Create operation
+    // Создать операцию с новыми полями
     const operation = Operation.create({
       code: dto.code,
       name: dto.name,
       description: dto.description,
+      calculationType: dto.calculationType,
+      defaultTimePerUnit: dto.defaultTimePerUnit,
+      defaultRatePerUnit: dto.defaultRatePerUnit,
       isActive: dto.isActive,
     });
 

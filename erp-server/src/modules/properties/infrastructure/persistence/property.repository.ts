@@ -14,7 +14,7 @@ export class PropertyRepository implements IPropertyRepository {
   constructor(
     @InjectRepository(PropertyEntity)
     private readonly repository: Repository<PropertyEntity>,
-  ) {}
+  ) { }
 
   async save(property: Property): Promise<Property> {
     const entity = PropertyMapper.toPersistence(property);
@@ -23,18 +23,42 @@ export class PropertyRepository implements IPropertyRepository {
   }
 
   async findById(id: number): Promise<Property | null> {
-    const entity = await this.repository.findOne({ where: { id } });
+    const entity = await this.repository.findOne({
+      where: { id },
+      relations: ['values'],
+      order: {
+        values: {
+          displayOrder: 'ASC',
+        },
+      },
+    });
     return entity ? PropertyMapper.toDomain(entity) : null;
   }
 
   async findByCode(code: string): Promise<Property | null> {
-    const entity = await this.repository.findOne({ where: { code } });
+    const entity = await this.repository.findOne({
+      where: { code },
+      relations: ['values'],
+      order: {
+        values: {
+          displayOrder: 'ASC',
+        },
+      },
+    });
     return entity ? PropertyMapper.toDomain(entity) : null;
   }
 
   async findByIds(ids: number[]): Promise<Property[]> {
     if (ids.length === 0) return [];
-    const entities = await this.repository.find({ where: { id: In(ids) } });
+    const entities = await this.repository.find({
+      where: { id: In(ids) },
+      relations: ['values'],
+      order: {
+        values: {
+          displayOrder: 'ASC',
+        },
+      },
+    });
     return PropertyMapper.toDomainList(entities);
   }
 
@@ -42,6 +66,7 @@ export class PropertyRepository implements IPropertyRepository {
     const entities = await this.repository.find({
       where: { isActive: true },
       order: { displayOrder: 'ASC' },
+      relations: ['values'],
     });
     return PropertyMapper.toDomainList(entities);
   }
@@ -49,6 +74,7 @@ export class PropertyRepository implements IPropertyRepository {
   async findAll(): Promise<Property[]> {
     const entities = await this.repository.find({
       order: { displayOrder: 'ASC' },
+      relations: ['values'],
     });
     return PropertyMapper.toDomainList(entities);
   }

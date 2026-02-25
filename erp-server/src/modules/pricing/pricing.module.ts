@@ -4,6 +4,7 @@ import { PriceModifierEntity } from './infrastructure/persistence/price-modifier
 import { PriceModifierRepository } from './infrastructure/persistence/price-modifier.repository';
 import { PRICE_MODIFIER_REPOSITORY } from './domain/repositories/injection-tokens';
 import { PriceModifiersController } from './presentation/controllers/price-modifiers.controller';
+
 import {
   CreatePriceModifierUseCase,
   GetPriceModifierByIdUseCase,
@@ -17,11 +18,16 @@ import {
 } from './application/use-cases';
 import { ProductPriceCalculatorService } from './domain/services/product-price-calculator.service';
 
+import { PricingController } from './presentation/controllers/pricing.controller';
+
+import { ProductsModule } from '../products/products.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([PriceModifierEntity]),
+    ProductsModule,
   ],
-  controllers: [PriceModifiersController],
+  controllers: [PriceModifiersController, PricingController],
   providers: [
     // Repository
     {

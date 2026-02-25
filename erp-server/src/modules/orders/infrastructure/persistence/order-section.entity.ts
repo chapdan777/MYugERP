@@ -15,10 +15,13 @@ export class OrderSectionEntity {
   @Column()
   name!: string;
 
+  @Column({ type: 'int', nullable: true })
+  headerId?: number;
+
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @OneToMany('OrderItemEntity', 'section', { cascade: true })
+  @OneToMany('OrderItemEntity', 'section', { cascade: true, orphanedRowAction: 'delete' })
   items!: any[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

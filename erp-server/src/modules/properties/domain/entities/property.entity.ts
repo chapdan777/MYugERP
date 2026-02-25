@@ -15,6 +15,7 @@ export class Property {
   private isRequired: boolean;
   private displayOrder: number;
   private isActive: boolean;
+  private variableName: string | null;
   private createdAt: Date;
   private updatedAt: Date;
 
@@ -28,6 +29,7 @@ export class Property {
     isRequired?: boolean;
     displayOrder?: number;
     isActive?: boolean;
+    variableName?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
   }) {
@@ -40,6 +42,7 @@ export class Property {
     this.isRequired = props.isRequired ?? false;
     this.displayOrder = props.displayOrder ?? 0;
     this.isActive = props.isActive ?? true;
+    this.variableName = props.variableName ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
 
@@ -57,6 +60,7 @@ export class Property {
     defaultValue?: string | null;
     isRequired?: boolean;
     displayOrder?: number;
+    variableName?: string | null;
   }): Property {
     // Сериализация возможных значений для select типов
     const possibleValuesJson = props.possibleValues
@@ -82,6 +86,7 @@ export class Property {
     isRequired: boolean;
     displayOrder: number;
     isActive: boolean;
+    variableName: string | null;
     createdAt: Date;
     updatedAt: Date;
   }): Property {
@@ -105,15 +110,15 @@ export class Property {
     }
 
     // Для select типов должны быть возможные значения
-    if (
-      (this.dataType === PropertyDataType.SELECT ||
-        this.dataType === PropertyDataType.MULTI_SELECT) &&
-      !this.possibleValues
-    ) {
-      throw new DomainException(
-        `Для типа ${this.dataType} необходимо указать возможные значения`,
-      );
-    }
+    // if (
+    //   (this.dataType === PropertyDataType.SELECT ||
+    //     this.dataType === PropertyDataType.MULTI_SELECT) &&
+    //   !this.possibleValues
+    // ) {
+    //   throw new DomainException(
+    //     `Для типа ${this.dataType} необходимо указать возможные значения`,
+    //   );
+    // }
   }
 
   /**
@@ -126,6 +131,7 @@ export class Property {
     defaultValue?: string | null;
     isRequired?: boolean;
     displayOrder?: number;
+    variableName?: string | null;
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
@@ -157,6 +163,10 @@ export class Property {
         throw new DomainException('Порядок отображения не может быть отрицательным');
       }
       this.displayOrder = props.displayOrder;
+    }
+
+    if (props.variableName !== undefined) {
+      this.variableName = props.variableName;
     }
 
     this.updatedAt = new Date();
@@ -197,7 +207,7 @@ export class Property {
     }
   }
 
-  // Getters
+  // Геттеры
   getId(): number | undefined {
     return this.id;
   }
@@ -232,6 +242,10 @@ export class Property {
 
   getIsActive(): boolean {
     return this.isActive;
+  }
+
+  getVariableName(): string | null {
+    return this.variableName;
   }
 
   getCreatedAt(): Date {

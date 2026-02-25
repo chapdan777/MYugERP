@@ -15,6 +15,8 @@ export class ProductPropertyMapper {
       propertyId: entity.propertyId,
       isRequired: entity.isRequired,
       displayOrder: entity.displayOrder,
+      defaultValue: entity.defaultValue,
+      isActive: entity.isActive ?? true,
       createdAt: entity.createdAt,
     });
   }
@@ -24,15 +26,17 @@ export class ProductPropertyMapper {
    */
   static toPersistence(domain: ProductProperty): ProductPropertyEntity {
     const entity = new ProductPropertyEntity();
-    
+
     if (domain.getId()) {
       entity.id = domain.getId()!;
     }
-    
+
     entity.productId = domain.getProductId();
     entity.propertyId = domain.getPropertyId();
     entity.isRequired = domain.getIsRequired();
     entity.displayOrder = domain.getDisplayOrder();
+    entity.defaultValue = domain.getDefaultValue();
+    entity.isActive = domain.getIsActive();
     entity.createdAt = domain.getCreatedAt();
 
     return entity;

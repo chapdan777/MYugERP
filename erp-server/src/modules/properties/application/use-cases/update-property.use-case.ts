@@ -10,6 +10,7 @@ export interface UpdatePropertyDto {
   defaultValue?: string;
   isRequired?: boolean;
   displayOrder?: number;
+  variableName?: string;
 }
 
 @Injectable()
@@ -34,6 +35,7 @@ export class UpdatePropertyUseCase {
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,
       displayOrder: dto.displayOrder,
+      variableName: dto.variableName,
     });
 
     return await this.propertyRepository.save(property);

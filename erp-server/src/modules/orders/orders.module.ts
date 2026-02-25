@@ -8,8 +8,13 @@ import { OrderItemEntity } from './infrastructure/persistence/order-item.entity'
 import { PropertyInOrderEntity } from './infrastructure/persistence/property-in-order.entity';
 import { OrderRepository } from './infrastructure/persistence/order.repository';
 import { CreateOrderUseCase } from './application/use-cases/create-order.use-case';
+import { GetOrdersUseCase } from './application/use-cases/get-orders.use-case';
+import { GetOrderByIdUseCase } from './application/use-cases/get-order-by-id.use-case';
+import { DeleteOrderUseCase } from './application/use-cases/delete-order.use-case';
 import { ORDER_REPOSITORY } from './domain/repositories/order.repository.interface';
 import { PricingModule } from '../pricing/pricing.module';
+import { ProductsModule } from '../products/products.module';
+import { UpdateOrderUseCase } from './application/use-cases/update-order.use-case';
 
 @Module({
   imports: [
@@ -20,6 +25,7 @@ import { PricingModule } from '../pricing/pricing.module';
       PropertyInOrderEntity
     ]),
     PricingModule,
+    ProductsModule,
   ],
   controllers: [OrdersController],
   providers: [
@@ -28,6 +34,10 @@ import { PricingModule } from '../pricing/pricing.module';
       useClass: OrderRepository,
     },
     CreateOrderUseCase,
+    GetOrdersUseCase,
+    GetOrderByIdUseCase,
+    DeleteOrderUseCase,
+    UpdateOrderUseCase,
   ],
   exports: [
     ORDER_REPOSITORY,

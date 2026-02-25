@@ -9,6 +9,8 @@ export interface SetProductPropertiesInput {
     propertyId: number;
     isRequired?: boolean;
     displayOrder?: number;
+    defaultValue?: string | null;
+    isActive?: boolean;
   }>;
 }
 
@@ -21,7 +23,7 @@ export class SetProductPropertiesUseCase {
   constructor(
     @Inject(PRODUCT_PROPERTY_REPOSITORY)
     private readonly productPropertyRepository: IProductPropertyRepository,
-  ) {}
+  ) { }
 
   async execute(input: SetProductPropertiesInput): Promise<void> {
     const { productId, properties } = input;
@@ -37,6 +39,8 @@ export class SetProductPropertiesUseCase {
         propertyId: prop.propertyId,
         isRequired: prop.isRequired ?? false,
         displayOrder: prop.displayOrder ?? i,
+        defaultValue: prop.defaultValue ?? null,
+        isActive: prop.isActive ?? true,
       });
       await this.productPropertyRepository.save(productProperty);
     }

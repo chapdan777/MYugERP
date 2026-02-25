@@ -9,6 +9,7 @@ import {
   CreateProductUseCase,
   GetProductByIdUseCase,
   GetAllActiveProductsUseCase,
+  GetProductsByCategoryUseCase,
   UpdateProductUseCase,
   ActivateProductUseCase,
   DeactivateProductUseCase,
@@ -38,6 +39,7 @@ import { ProductsController } from './presentation/controllers/products.controll
     CreateProductUseCase,
     GetProductByIdUseCase,
     GetAllActiveProductsUseCase,
+    GetProductsByCategoryUseCase,
     UpdateProductUseCase,
     ActivateProductUseCase,
     DeactivateProductUseCase,
@@ -50,4 +52,4 @@ import { ProductsController } from './presentation/controllers/products.controll
     PRODUCT_PROPERTY_REPOSITORY,
   ],
 })
-export class ProductsModule {}
+export class ProductsModule { }

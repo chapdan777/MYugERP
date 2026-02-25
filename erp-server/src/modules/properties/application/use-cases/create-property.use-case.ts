@@ -12,6 +12,7 @@ export interface CreatePropertyDto {
   defaultValue?: string;
   isRequired: boolean;
   displayOrder: number;
+  variableName?: string;
 }
 
 @Injectable()
@@ -19,7 +20,7 @@ export class CreatePropertyUseCase {
   constructor(
     @Inject(PROPERTY_REPOSITORY)
     private readonly propertyRepository: IPropertyRepository,
-  ) {}
+  ) { }
 
   async execute(dto: CreatePropertyDto): Promise<Property> {
     // Проверка уникальности кода
@@ -37,6 +38,7 @@ export class CreatePropertyUseCase {
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,
       displayOrder: dto.displayOrder,
+      variableName: dto.variableName,
     });
 
     // Сохранение

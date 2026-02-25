@@ -23,6 +23,12 @@ export class ProductPropertyEntity {
   @Column({ type: 'int', default: 0 })
   displayOrder!: number;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  defaultValue!: string | null;
+
+  @Column({ type: 'boolean', default: true })
+  isActive!: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt!: Date;
 }

@@ -21,6 +21,7 @@ export class DepartmentOperation {
   private isActive: boolean;
   private createdAt: Date;
   private updatedAt: Date;
+  private operation?: { name: string; code: string };
 
   private constructor(
     id: number | undefined,
@@ -30,6 +31,7 @@ export class DepartmentOperation {
     isActive: boolean,
     createdAt: Date,
     updatedAt: Date,
+    operation?: { name: string; code: string },
   ) {
     this.id = id;
     this.departmentId = departmentId;
@@ -38,6 +40,11 @@ export class DepartmentOperation {
     this.isActive = isActive;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.operation = operation;
+  }
+
+  getOperation(): { name: string; code: string } | undefined {
+    return this.operation;
   }
 
   /**
@@ -77,6 +84,7 @@ export class DepartmentOperation {
     isActive: boolean,
     createdAt: Date,
     updatedAt: Date,
+    operation?: { name: string; code: string },
   ): DepartmentOperation {
     return new DepartmentOperation(
       id,
@@ -86,6 +94,7 @@ export class DepartmentOperation {
       isActive,
       createdAt,
       updatedAt,
+      operation,
     );
   }
 

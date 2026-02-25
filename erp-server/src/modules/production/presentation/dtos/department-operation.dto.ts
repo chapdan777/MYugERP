@@ -39,6 +39,8 @@ export class DepartmentOperationResponseDto {
   id!: number;
   departmentId!: number;
   operationId!: number;
+  operationName?: string;
+  operationCode?: string;
   priority!: number;
   isActive!: boolean;
   createdAt!: Date;
@@ -49,6 +51,14 @@ export class DepartmentOperationResponseDto {
     dto.id = departmentOperation.getId()!;
     dto.departmentId = departmentOperation.getDepartmentId();
     dto.operationId = departmentOperation.getOperationId();
+
+    // Get operation details from domain entity
+    const operation = departmentOperation.getOperation();
+    if (operation) {
+      dto.operationName = operation.name;
+      dto.operationCode = operation.code;
+    }
+
     dto.priority = departmentOperation.getPriority();
     dto.isActive = departmentOperation.getIsActive();
     dto.createdAt = departmentOperation.getCreatedAt();

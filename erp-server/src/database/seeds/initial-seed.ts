@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../../modules/users/infrastructure/persistence/user.entity';
+import { seedWorkOrderStatuses } from './work-order-statuses-seed';
+import { seedRequestedProperties } from './requested-properties-seed';
 
 /**
  * Начальная инициализация базы данных
@@ -8,6 +10,12 @@ import { UserEntity } from '../../modules/users/infrastructure/persistence/user.
  */
 export async function runInitialSeed(dataSource: DataSource): Promise<void> {
   const userRepository = dataSource.getRepository(UserEntity);
+
+  // Запускаем seed для статусов заказ-нарядов
+  await seedWorkOrderStatuses(dataSource);
+
+  // Запускаем seed для запрошенных пользователем свойств
+  await seedRequestedProperties(dataSource);
 
   // Проверяем, существует ли уже администратор
   const existingAdmin = await userRepository.findOne({
@@ -37,6 +45,7 @@ export async function runInitialSeed(dataSource: DataSource): Promise<void> {
   });
 
   await userRepository.save(adminUser);
+
 
   console.log('✅ Admin user created successfully:');
   console.log('   Username: admin');

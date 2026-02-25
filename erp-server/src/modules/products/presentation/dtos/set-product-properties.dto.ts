@@ -16,11 +16,20 @@ export class ProductPropertyItemDto {
   @IsNumber()
   @IsOptional()
   displayOrder?: number;
+
+  @ApiProperty({ description: 'Значение по умолчанию для продукта', example: '50', required: false })
+  @IsOptional()
+  defaultValue?: string | null;
+
+  @ApiProperty({ description: 'Активно ли свойство для продукта', example: true, required: false })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
 
 export class SetProductPropertiesDto {
-  @ApiProperty({ 
-    description: 'Список свойств продукта', 
+  @ApiProperty({
+    description: 'Список свойств продукта',
     type: [ProductPropertyItemDto],
     example: [
       { propertyId: 1, isRequired: false, displayOrder: 0 },

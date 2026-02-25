@@ -1,5 +1,7 @@
 import { DomainException } from '../../../../common/exceptions/domain.exception';
 
+import { PriceModifier } from '../../../pricing/domain/entities/price-modifier.entity';
+
 /**
  * PropertyValue - сущность для управления значениями свойств
  * Каждое значение может иметь привязанный модификатор цены
@@ -9,6 +11,7 @@ export class PropertyValue {
   private propertyId: number;
   private value: string;
   private priceModifierId: number | null;
+  private priceModifier?: PriceModifier | null;
   private displayOrder: number;
   private isActive: boolean;
   private createdAt: Date;
@@ -19,6 +22,7 @@ export class PropertyValue {
     propertyId: number;
     value: string;
     priceModifierId?: number | null;
+    priceModifier?: PriceModifier | null;
     displayOrder?: number;
     isActive?: boolean;
     createdAt?: Date;
@@ -28,6 +32,7 @@ export class PropertyValue {
     this.propertyId = props.propertyId;
     this.value = props.value;
     this.priceModifierId = props.priceModifierId ?? null;
+    this.priceModifier = props.priceModifier;
     this.displayOrder = props.displayOrder ?? 0;
     this.isActive = props.isActive ?? true;
     this.createdAt = props.createdAt ?? new Date();
@@ -43,6 +48,7 @@ export class PropertyValue {
     propertyId: number;
     value: string;
     priceModifierId?: number | null;
+    priceModifier?: PriceModifier | null;
     displayOrder?: number;
   }): PropertyValue {
     return new PropertyValue(props);
@@ -56,6 +62,7 @@ export class PropertyValue {
     propertyId: number;
     value: string;
     priceModifierId: number | null;
+    priceModifier?: PriceModifier | null;
     displayOrder: number;
     isActive: boolean;
     createdAt: Date;
@@ -145,6 +152,10 @@ export class PropertyValue {
 
   getPriceModifierId(): number | null {
     return this.priceModifierId;
+  }
+
+  getPriceModifier(): PriceModifier | null | undefined {
+    return this.priceModifier;
   }
 
   getDisplayOrder(): number {

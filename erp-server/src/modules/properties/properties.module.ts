@@ -17,6 +17,9 @@ import { GetPropertyValuesByPropertyIdUseCase } from './application/use-cases/ge
 import { DeletePropertyDependencyUseCase } from './application/use-cases/delete-property-dependency.use-case';
 import { CreatePropertyDependencyUseCase } from './application/use-cases/create-property-dependency.use-case';
 import { GetDependenciesForPropertyUseCase } from './application/use-cases/get-dependencies-for-property.use-case';
+import { UpdatePropertyValueUseCase } from './application/use-cases/update-property-value.use-case';
+import { DeletePropertyValueUseCase } from './application/use-cases/delete-property-value.use-case';
+
 
 // Repositories
 import { PropertyRepository } from './infrastructure/persistence/property.repository';
@@ -29,9 +32,12 @@ import { PropertyEntity } from './infrastructure/persistence/property.entity';
 import { PropertyValueEntity } from './infrastructure/persistence/property-value.entity';
 import { PropertyDependencyEntity } from './infrastructure/persistence/property-dependency.entity';
 
+import { PricingModule } from '../pricing/pricing.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([PropertyEntity, PropertyValueEntity, PropertyDependencyEntity]),
+    PricingModule,
   ],
   controllers: [PropertiesController, PropertyValuesController, PropertyDependenciesController],
   providers: [
@@ -48,6 +54,9 @@ import { PropertyDependencyEntity } from './infrastructure/persistence/property-
     DeletePropertyDependencyUseCase,
     CreatePropertyDependencyUseCase,
     GetDependenciesForPropertyUseCase,
+    UpdatePropertyValueUseCase,
+    DeletePropertyValueUseCase,
+
 
     // Repositories
     {
@@ -58,6 +67,7 @@ import { PropertyDependencyEntity } from './infrastructure/persistence/property-
       provide: PROPERTY_VALUE_REPOSITORY,
       useClass: PropertyValueRepository,
     },
+
     {
       provide: PROPERTY_DEPENDENCY_REPOSITORY,
       useClass: PropertyDependencyRepository,

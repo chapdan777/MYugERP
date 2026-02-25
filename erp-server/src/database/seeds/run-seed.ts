@@ -20,7 +20,7 @@ async function main() {
     username: process.env.DATABASE_USERNAME || 'postgres',
     password: process.env.DATABASE_PASSWORD || 'postgres',
     database: process.env.DATABASE_NAME || 'erp_db',
-    entities: [__dirname + '/../../modules/**/infrastructure/persistence/*.entity{.ts,.js}'],
+    entities: [__dirname + '/../../modules/**/infrastructure/persistence/**/*.entity{.ts,.js}'],
     synchronize: false, // Используем миграции!
     logging: false,
   });

@@ -10,6 +10,7 @@ import {
   HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 
 // UseCases
@@ -24,6 +25,8 @@ import { DeactivatePropertyUseCase } from '../../application/use-cases/deactivat
 // DTOs
 import { CreatePropertyRequestDto, UpdatePropertyRequestDto, PropertyResponseDto } from '../dtos/property.dto';
 
+@ApiTags('properties')
+@ApiBearerAuth('JWT-auth')
 @Controller('properties')
 @UseGuards(JwtAuthGuard)
 export class PropertiesController {
@@ -38,6 +41,8 @@ export class PropertiesController {
   ) { }
 
   @Post()
+  @ApiOperation({ summary: 'Создать новое свойство' })
+  @ApiResponse({ status: 201, description: 'Свойство успешно создано', type: PropertyResponseDto })
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreatePropertyRequestDto): Promise<PropertyResponseDto> {
     const property = await this.createPropertyUseCase.execute({
@@ -48,30 +53,39 @@ export class PropertiesController {
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,
       displayOrder: dto.displayOrder,
+      variableName: dto.variableName,
     });
 
     return this.mapToResponse(property);
   }
 
   @Get()
+  @ApiOperation({ summary: 'Получить все активные свойства' })
+  @ApiResponse({ status: 200, description: 'Список активных свойств', type: [PropertyResponseDto] })
   async getAll(): Promise<PropertyResponseDto[]> {
     const properties = await this.getAllActivePropertiesUseCase.execute();
     return properties.map(p => this.mapToResponse(p));
   }
 
   @Get('all')
+  @ApiOperation({ summary: 'Получить все свойства (включая неактивные)' })
+  @ApiResponse({ status: 200, description: 'Список всех свойств', type: [PropertyResponseDto] })
   async getAllIncludingInactive(): Promise<PropertyResponseDto[]> {
     const properties = await this.getAllPropertiesUseCase.execute();
     return properties.map(p => this.mapToResponse(p));
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Получить свойство по ID' })
+  @ApiResponse({ status: 200, description: 'Свойство найдено', type: PropertyResponseDto })
   async getById(@Param('id', ParseIntPipe) id: number): Promise<PropertyResponseDto> {
     const property = await this.getPropertyByIdUseCase.execute(id);
     return this.mapToResponse(property);
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Обновить свойство' })
+  @ApiResponse({ status: 200, description: 'Свойство успешно обновлено', type: PropertyResponseDto })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePropertyRequestDto,
@@ -83,18 +97,23 @@ export class PropertiesController {
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,
       displayOrder: dto.displayOrder,
+      variableName: dto.variableName,
     });
 
     return this.mapToResponse(property);
   }
 
   @Post(':id/activate')
+  @ApiOperation({ summary: 'Активировать свойство' })
+  @ApiResponse({ status: 200, description: 'Свойство активировано', type: PropertyResponseDto })
   async activate(@Param('id', ParseIntPipe) id: number): Promise<PropertyResponseDto> {
     const property = await this.activatePropertyUseCase.execute(id);
     return this.mapToResponse(property);
   }
 
   @Post(':id/deactivate')
+  @ApiOperation({ summary: 'Деактивировать свойство' })
+  @ApiResponse({ status: 200, description: 'Свойство деактивировано', type: PropertyResponseDto })
   async deactivate(@Param('id', ParseIntPipe) id: number): Promise<PropertyResponseDto> {
     const property = await this.deactivatePropertyUseCase.execute(id);
     return this.mapToResponse(property);
@@ -111,6 +130,7 @@ export class PropertiesController {
       isRequired: property.getIsRequired(),
       displayOrder: property.getDisplayOrder(),
       isActive: property.getIsActive(),
+      variableName: property.getVariableName(),
       createdAt: property.getCreatedAt(),
       updatedAt: property.getUpdatedAt(),
     };

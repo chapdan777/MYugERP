@@ -1,5 +1,6 @@
 import { PropertyHeaderProduct } from '../../domain/entities/property-header-product.entity';
 import { PropertyHeaderProductEntity } from '../persistence/property-header-product.entity';
+import { ProductMapper } from '../../../products/infrastructure/persistence/product.mapper';
 
 export class PropertyHeaderProductMapper {
     static toDomain(entity: PropertyHeaderProductEntity): PropertyHeaderProduct {
@@ -7,6 +8,7 @@ export class PropertyHeaderProductMapper {
             headerId: entity.headerId,
             productId: entity.productId,
             createdAt: entity.createdAt,
+            product: entity.product ? ProductMapper.toDomain(entity.product) : undefined,
         });
     }
 

@@ -1,4 +1,5 @@
 import { DomainException } from '../../../../common/exceptions/domain.exception';
+import { OperationMaterial } from './operation-material.entity';
 
 /**
  * RouteStep entity - a single step in a technological route
@@ -11,6 +12,7 @@ export class RouteStep {
   private stepNumber: number; // Sequence order
   private description: string | null;
   private isRequired: boolean;
+  private materials: OperationMaterial[];
   private createdAt: Date;
   private updatedAt: Date;
 
@@ -21,6 +23,7 @@ export class RouteStep {
     stepNumber: number;
     description?: string | null;
     isRequired?: boolean;
+    materials?: OperationMaterial[];
     createdAt?: Date;
     updatedAt?: Date;
   }) {
@@ -30,6 +33,7 @@ export class RouteStep {
     this.stepNumber = props.stepNumber;
     this.description = props.description ?? null;
     this.isRequired = props.isRequired ?? true;
+    this.materials = props.materials ?? [];
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
 
@@ -45,6 +49,7 @@ export class RouteStep {
     stepNumber: number;
     description?: string | null;
     isRequired?: boolean;
+    materials?: OperationMaterial[];
   }): RouteStep {
     return new RouteStep(props);
   }
@@ -59,6 +64,7 @@ export class RouteStep {
     stepNumber: number;
     description: string | null;
     isRequired: boolean;
+    materials: OperationMaterial[];
     createdAt: Date;
     updatedAt: Date;
   }): RouteStep {
@@ -69,11 +75,14 @@ export class RouteStep {
    * Validate invariants
    */
   private validate(): void {
-    if (this.routeId <= 0) {
-      throw new DomainException('Route ID must be positive');
+    // Note: routeId can be 0 during creation before the route is persisted
+    // The actual routeId will be set by the persistence layer when saving
+    if (this.routeId < 0) {
+      throw new DomainException('Route ID cannot be negative');
     }
-    if (this.operationId <= 0) {
-      throw new DomainException('Operation ID must be positive');
+    // Note: operationId can be 0 for material-only routes
+    if (this.operationId < 0) {
+      throw new DomainException('Operation ID cannot be negative');
     }
     if (this.stepNumber < 0) {
       throw new DomainException('Step number cannot be negative');
@@ -129,6 +138,10 @@ export class RouteStep {
 
   getIsRequired(): boolean {
     return this.isRequired;
+  }
+
+  getMaterials(): OperationMaterial[] {
+    return [...this.materials];
   }
 
   getCreatedAt(): Date {

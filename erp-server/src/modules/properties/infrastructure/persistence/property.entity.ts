@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from 'typeorm';
+import { PropertyValueEntity } from './property-value.entity';
 
 /**
  * TypeORM Entity для Property (persistence model)
@@ -34,9 +35,15 @@ export class PropertyEntity {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  variableName!: string | null;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt!: Date;
 
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt!: Date;
+
+  @OneToMany(() => PropertyValueEntity, propertyValue => propertyValue.property)
+  values!: PropertyValueEntity[];
 }

@@ -1,9 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { RefreshTokenPayload } from './strategies/jwt-refresh.strategy';
+import { GetUserByUsernameUseCase } from '../users/application/use-cases/get-user.use-case';
+import { User } from '../users/domain/entities/user.entity';
 
 /**
  * Токены аутентификации
@@ -22,19 +24,28 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly getUserByUsernameUseCase: GetUserByUsernameUseCase,
+  ) { }
 
   /**
    * Валидация пользователя по username и password
-   * TODO: Реализовать после создания User модуля
    */
-  async validateUser(_username: string, _password: string): Promise<any> {
-    // Заглушка - будет заменена на реальную логику после создания User модуля
-    // const user = await this.userRepository.findByUsername(username);
-    // if (user && await bcrypt.compare(password, user.passwordHash)) {
-    //   return user;
-    // }
-    throw new UnauthorizedException('Неверные учетные данные');
+  async validateUser(username: string, password: string): Promise<User | null> {
+    try {
+      const user = await this.getUserByUsernameUseCase.execute(username);
+
+      if (user && await this.comparePasswords(password, user.getPasswordHash())) {
+        return user;
+      }
+    } catch (error) {
+      // If user not found, return null
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+      throw error;
+    }
+
+    return null;
   }
 
   /**
@@ -79,6 +90,7 @@ export class AuthService {
     userId: number,
     username: string,
   ): Promise<string> {
+    // Note: Refresh token usually contains only sub and username (and maybe version/tokenId)
     const payload: RefreshTokenPayload = {
       sub: userId,
       username,
@@ -92,9 +104,9 @@ export class AuthService {
 
   /**
    * Обновление access токена через refresh token
-   * TODO: Добавить хранение refresh токенов в БД для отзыва
    */
   async refreshAccessToken(userId: number, username: string, role: string): Promise<string> {
+    // Note: In a production environment, we should check if the refresh token is revoked
     return this.generateAccessToken(userId, username, role);
   }
 

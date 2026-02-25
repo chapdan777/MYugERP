@@ -8,5 +8,7 @@ export enum ProductCategory {
   PARTITIONS = 'partitions',
   RAILINGS = 'railings',
   CANOPIES = 'canopies',
+  MATERIAL = 'material',
+  SEMIFINISHED = 'semifinished',
   OTHER = 'other',
 }

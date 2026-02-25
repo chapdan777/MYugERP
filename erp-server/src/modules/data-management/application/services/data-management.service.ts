@@ -13,7 +13,7 @@ import { CreatePropertyValueDto } from '../dto/create-property-value.dto';
 
 @Injectable()
 export class DataManagementService {
-  constructor() {}
+  constructor() { }
 
 
   /**
@@ -27,7 +27,7 @@ export class DataManagementService {
   /**
    * Получить всех пользователей
    */
-  async getAllUsers(_query?: any) {
+  async getAllUsers(_query?: Record<string, unknown>) {
     // Заглушка до реализации
     return []; // Заглушка до реализации
   }
@@ -43,7 +43,7 @@ export class DataManagementService {
   /**
    * Получить все продукты
    */
-  async getAllProducts(_query?: any) {
+  async getAllProducts(_query?: Record<string, unknown>) {
     // Заглушка до реализации
     return []; // Заглушка до реализации
   }
@@ -59,7 +59,7 @@ export class DataManagementService {
   /**
    * Получить все свойства
    */
-  async getAllProperties(_query?: any) {
+  async getAllProperties(_query?: Record<string, unknown>) {
     // Заглушка до реализации
     return []; // Заглушка до реализации
   }
@@ -75,7 +75,7 @@ export class DataManagementService {
   /**
    * Получить все заказы (шапки заказов)
    */
-  async getAllOrderHeaders(_query?: any) {
+  async getAllOrderHeaders(_query?: Record<string, unknown>) {
     // Заглушка до реализации
     return []; // Заглушка до реализации
   }
@@ -91,7 +91,7 @@ export class DataManagementService {
   /**
    * Получить все значения свойств
    */
-  async getAllPropertyValues(_query?: any) {
+  async getAllPropertyValues(_query?: Record<string, unknown>) {
     // Заглушка - в реальности нужно будет реализовать
     throw new Error('Метод getAllPropertyValues пока не реализован');
   }

@@ -1,23 +1,39 @@
-import { IsString, IsNotEmpty, IsUUID, IsOptional, IsArray, ValidateNested, IsNumber, IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsNumber, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class CreateOrderItemDto {
-  @IsUUID()
-  productId!: string;
+  @IsNumber()
+  productId!: number;
 
   @IsNumber()
   quantity!: number;
 
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   length?: number;
 
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   width?: number;
+
+  @IsOptional()
+  @IsNumber()
+  depth?: number;
 
   @IsString()
   unit!: string;
+
+  @IsOptional()
+  @IsNumber()
+  basePrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  finalPrice?: number;
+
+  @IsString()
+  @IsOptional()
+  note?: string;
 
   @IsOptional()
   @IsArray()
@@ -32,6 +48,9 @@ class CreateOrderSectionDto {
   @IsNotEmpty()
   sectionName!: string;
 
+  @IsNumber()
+  headerId!: number;
+
   @IsOptional()
   @IsArray()
   propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
@@ -43,12 +62,12 @@ class CreateOrderSectionDto {
 }
 
 export class CreateOrderDto {
-  @IsUUID()
+  @IsInt()
   clientId!: number;
 
   @IsString()
-  @IsNotEmpty()
-  clientName!: string;
+  @IsOptional()
+  clientName?: string;
 
   @IsOptional()
   @Type(() => Date)

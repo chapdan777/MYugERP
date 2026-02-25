@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, ParseIntPipe, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -16,6 +16,7 @@ import {
   CreateProductUseCase,
   GetProductByIdUseCase,
   GetAllActiveProductsUseCase,
+  GetProductsByCategoryUseCase,
   UpdateProductUseCase,
   ActivateProductUseCase,
   DeactivateProductUseCase,
@@ -34,12 +35,13 @@ export class ProductsController {
     private readonly createProductUseCase: CreateProductUseCase,
     private readonly getProductByIdUseCase: GetProductByIdUseCase,
     private readonly getAllActiveProductsUseCase: GetAllActiveProductsUseCase,
+    private readonly getProductsByCategoryUseCase: GetProductsByCategoryUseCase,
     private readonly updateProductUseCase: UpdateProductUseCase,
     private readonly activateProductUseCase: ActivateProductUseCase,
     private readonly deactivateProductUseCase: DeactivateProductUseCase,
     private readonly setProductPropertiesUseCase: SetProductPropertiesUseCase,
     private readonly getProductPropertiesUseCase: GetProductPropertiesUseCase,
-  ) {}
+  ) { }
 
   /**
    * Создание нового продукта
@@ -48,10 +50,10 @@ export class ProductsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать новый продукт' })
   @ApiBody({ type: CreateProductDto })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Продукт успешно создан', 
-    type: ProductResponseDto 
+  @ApiResponse({
+    status: 201,
+    description: 'Продукт успешно создан',
+    type: ProductResponseDto
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -74,15 +76,22 @@ export class ProductsController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Получить список всех активных продуктов' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Список продуктов успешно получен', 
-    type: [ProductResponseDto] 
+  @ApiOperation({ summary: 'Получить список всех активных продуктов (с возможностью фильтрации по категории)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Список продуктов успешно получен',
+    type: [ProductResponseDto]
   })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
-  async findAllActive(): Promise<ProductResponseDto[]> {
-    const products = await this.getAllActiveProductsUseCase.execute();
+  async findAllActive(
+    @Query('category') category?: string,
+  ): Promise<ProductResponseDto[]> {
+    let products;
+    if (category && Object.values(ProductCategory).includes(category as ProductCategory)) {
+      products = await this.getProductsByCategoryUseCase.execute(category as ProductCategory);
+    } else {
+      products = await this.getAllActiveProductsUseCase.execute();
+    }
     return ProductResponseDto.fromDomainList(products);
   }
 
@@ -93,10 +102,10 @@ export class ProductsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Получить продукт по ID' })
   @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Продукт найден', 
-    type: ProductResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Продукт найден',
+    type: ProductResponseDto
   })
   @ApiResponse({ status: 404, description: 'Продукт не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -113,10 +122,10 @@ export class ProductsController {
   @ApiOperation({ summary: 'Обновить информацию о продукте' })
   @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
   @ApiBody({ type: UpdateProductRequestDto })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Продукт успешно обновлен', 
-    type: ProductResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Продукт успешно обновлен',
+    type: ProductResponseDto
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 404, description: 'Продукт не найден' })
@@ -143,10 +152,10 @@ export class ProductsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Активировать продукт' })
   @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Продукт успешно активирован', 
-    type: ProductResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Продукт успешно активирован',
+    type: ProductResponseDto
   })
   @ApiResponse({ status: 404, description: 'Продукт не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -163,10 +172,10 @@ export class ProductsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Деактивировать продукт' })
   @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Продукт успешно деактивирован', 
-    type: ProductResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Продукт успешно деактивирован',
+    type: ProductResponseDto
   })
   @ApiResponse({ status: 404, description: 'Продукт не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -184,8 +193,8 @@ export class ProductsController {
   @ApiOperation({ summary: 'Установить свойства продукта' })
   @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
   @ApiBody({ type: SetProductPropertiesDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Свойства продукта успешно установлены'
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
@@ -209,8 +218,8 @@ export class ProductsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Получить свойства продукта' })
   @ApiParam({ name: 'id', description: 'ID продукта', type: Number })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Свойства продукта получены',
     schema: {
       type: 'object',

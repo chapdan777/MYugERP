@@ -1,4 +1,5 @@
 import { IsNumber, IsString, IsOptional, IsEnum } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { WorkOrder } from '../../domain/entities/work-order.entity';
 import { WorkOrderItem } from '../../domain/entities/work-order-item.entity';
 import { WorkOrderStatus } from '../../domain/enums/work-order-status.enum';
@@ -8,22 +9,47 @@ import { WorkOrderStatus } from '../../domain/enums/work-order-status.enum';
  */
 
 export class GenerateWorkOrdersDto {
+  @ApiProperty({ description: 'ID заказа для генерации ЗН', example: 123 })
   @IsNumber()
   orderId!: number;
 }
 
 export class WorkOrderItemResponseDto {
+  @ApiProperty({ description: 'ID позиции ЗН' })
   id!: number;
+
+  @ApiProperty({ description: 'ID позиции заказа' })
   orderItemId!: number;
+
+  @ApiProperty({ description: 'ID продукта' })
   productId!: number;
+
+  @ApiProperty({ description: 'Название продукта' })
   productName!: string;
+
+  @ApiProperty({ description: 'ID операции' })
   operationId!: number;
+
+  @ApiProperty({ description: 'Название операции' })
   operationName!: string;
+
+  @ApiProperty({ description: 'Количество' })
   quantity!: number;
+
+  @ApiProperty({ description: 'Единица измерения' })
   unit!: string;
+
+  @ApiProperty({ description: 'Расчетное время (часы)' })
   estimatedHours!: number;
+
+  @ApiProperty({ description: 'Сдельная оплата' })
   pieceRate!: number;
+
+  @ApiPropertyOptional({ description: 'Фактическое время (часы)' })
   actualHours!: number | null;
+
+  @ApiPropertyOptional({ description: 'Расчитанные материалы и параметры' })
+  calculatedMaterials!: any;
 
   static fromEntity(item: WorkOrderItem): WorkOrderItemResponseDto {
     const dto = new WorkOrderItemResponseDto();
@@ -38,34 +64,82 @@ export class WorkOrderItemResponseDto {
     dto.estimatedHours = item.getEstimatedHours();
     dto.pieceRate = item.getPieceRate();
     dto.actualHours = item.getActualHours();
+    dto.calculatedMaterials = item.getCalculatedMaterials();
     return dto;
   }
 }
 
 export class WorkOrderResponseDto {
+  @ApiProperty({ description: 'ID заказ-наряда' })
   id!: number;
+
+  @ApiProperty({ description: 'Номер заказ-наряда', example: 'WO-123-OP1' })
   workOrderNumber!: string;
+
+  @ApiProperty({ description: 'ID заказа' })
   orderId!: number;
+
+  @ApiProperty({ description: 'Номер заказа' })
   orderNumber!: string;
+
+  @ApiProperty({ description: 'ID цеха' })
   departmentId!: number;
+
+  @ApiProperty({ description: 'Название цеха' })
   departmentName!: string;
+
+  @ApiProperty({ description: 'ID операции' })
   operationId!: number;
+
+  @ApiProperty({ description: 'Название операции' })
   operationName!: string;
+
+  @ApiProperty({ enum: WorkOrderStatus, description: 'Статус ЗН' })
   status!: WorkOrderStatus;
+
+  @ApiProperty({ description: 'Приоритет' })
   priority!: number;
+
+  @ApiProperty({ description: 'Эффективный приоритет' })
   effectivePriority!: number;
+
+  @ApiPropertyOptional({ description: 'Переопределенный приоритет' })
   priorityOverride!: number | null;
+
+  @ApiPropertyOptional({ description: 'Причина переопределения приоритета' })
   priorityOverrideReason!: string | null;
+
+  @ApiPropertyOptional({ description: 'Дедлайн' })
   deadline!: Date | null;
+
+  @ApiPropertyOptional({ description: 'Дата назначения' })
   assignedAt!: Date | null;
+
+  @ApiPropertyOptional({ description: 'Дата начала' })
   startedAt!: Date | null;
+
+  @ApiPropertyOptional({ description: 'Дата завершения' })
   completedAt!: Date | null;
+
+  @ApiProperty({ type: [WorkOrderItemResponseDto], description: 'Позиции ЗН' })
   items!: WorkOrderItemResponseDto[];
+
+  @ApiProperty({ description: 'Общее расчетное время' })
   totalEstimatedHours!: number;
+
+  @ApiPropertyOptional({ description: 'Общее фактическое время' })
   totalActualHours!: number | null;
+
+  @ApiProperty({ description: 'Общая сдельная оплата' })
   totalPieceRatePayment!: number;
+
+  @ApiPropertyOptional({ description: 'Заметки' })
   notes!: string | null;
+
+  @ApiProperty({ description: 'Дата создания' })
   createdAt!: Date;
+
+  @ApiProperty({ description: 'Дата обновления' })
   updatedAt!: Date;
 
   static fromEntity(workOrder: WorkOrder): WorkOrderResponseDto {
@@ -99,48 +173,59 @@ export class WorkOrderResponseDto {
 }
 
 export class UpdateWorkOrderNotesDto {
+  @ApiProperty({ description: 'Заметки к ЗН' })
   @IsString()
   notes!: string;
 }
 
 export class OverridePriorityDto {
+  @ApiProperty({ description: 'Новый приоритет' })
   @IsNumber()
   newPriority!: number;
 
+  @ApiProperty({ description: 'Причина изменения приоритета' })
   @IsString()
   reason!: string;
 }
 
 export class RecordActualHoursDto {
+  @ApiProperty({ description: 'ID позиции ЗН' })
   @IsNumber()
   itemId!: number;
 
+  @ApiProperty({ description: 'Фактически затраченное время (часы)' })
   @IsNumber()
   actualHours!: number;
 }
 
 export class CancelWorkOrderDto {
+  @ApiProperty({ description: 'Причина отмены' })
   @IsString()
   reason!: string;
 }
 
 export class WorkOrderListQueryDto {
+  @ApiPropertyOptional({ description: 'Фильтр по ID заказа' })
   @IsOptional()
   @IsNumber()
   orderId?: number;
 
+  @ApiPropertyOptional({ description: 'Фильтр по ID цеха' })
   @IsOptional()
   @IsNumber()
   departmentId?: number;
 
+  @ApiPropertyOptional({ enum: WorkOrderStatus, description: 'Фильтр по статусу' })
   @IsOptional()
   @IsEnum(WorkOrderStatus)
   status?: WorkOrderStatus;
 
+  @ApiPropertyOptional({ description: 'Минимальный приоритет' })
   @IsOptional()
   @IsNumber()
   minPriority?: number;
 
+  @ApiPropertyOptional({ description: 'Максимальный приоритет' })
   @IsOptional()
   @IsNumber()
   maxPriority?: number;

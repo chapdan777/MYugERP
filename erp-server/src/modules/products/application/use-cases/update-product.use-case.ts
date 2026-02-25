@@ -11,6 +11,9 @@ export class UpdateProductDto {
   basePrice?: number;
   unit?: string;
   category?: ProductCategory;
+  defaultLength?: number;
+  defaultWidth?: number;
+  defaultDepth?: number;
 }
 
 /**
@@ -21,11 +24,11 @@ export class UpdateProductUseCase {
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: IProductRepository,
-  ) {}
+  ) { }
 
   async execute(id: number, dto: UpdateProductDto): Promise<Product> {
     const product = await this.productRepository.findById(id);
-    
+
     if (!product) {
       throw new NotFoundException(`Продукт с ID ${id} не найден`);
     }
@@ -40,6 +43,9 @@ export class UpdateProductUseCase {
       basePrice: dto.basePrice,
       unit,
       category: dto.category,
+      defaultLength: dto.defaultLength,
+      defaultWidth: dto.defaultWidth,
+      defaultDepth: dto.defaultDepth,
     });
 
     return this.productRepository.save(product);

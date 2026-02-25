@@ -8,7 +8,7 @@ export class UpdateOperationUseCase {
   constructor(
     @Inject(OPERATION_REPOSITORY)
     private readonly operationRepository: IOperationRepository,
-  ) {}
+  ) { }
 
   async execute(id: number, dto: UpdateOperationDto): Promise<Operation> {
     // Find operation
@@ -17,10 +17,13 @@ export class UpdateOperationUseCase {
       throw new NotFoundException(`Operation with ID ${id} not found`);
     }
 
-    // Update operation
+    // Обновить операцию с новыми полями
     operation.updateInfo({
       name: dto.name,
       description: dto.description,
+      calculationType: dto.calculationType,
+      defaultTimePerUnit: dto.defaultTimePerUnit,
+      defaultRatePerUnit: dto.defaultRatePerUnit,
       isActive: dto.isActive,
     });
 

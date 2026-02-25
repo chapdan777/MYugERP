@@ -8,6 +8,8 @@ export class ProductProperty {
   private propertyId: number;
   private isRequired: boolean;
   private displayOrder: number;
+  private defaultValue: string | null;
+  private isActive: boolean;
   private createdAt: Date;
 
   private constructor(props: {
@@ -16,6 +18,8 @@ export class ProductProperty {
     propertyId: number;
     isRequired?: boolean;
     displayOrder?: number;
+    defaultValue?: string | null;
+    isActive?: boolean;
     createdAt?: Date;
   }) {
     this.id = props.id;
@@ -23,6 +27,8 @@ export class ProductProperty {
     this.propertyId = props.propertyId;
     this.isRequired = props.isRequired ?? false;
     this.displayOrder = props.displayOrder ?? 0;
+    this.defaultValue = props.defaultValue ?? null;
+    this.isActive = props.isActive ?? true;
     this.createdAt = props.createdAt ?? new Date();
 
     this.validate();
@@ -36,6 +42,8 @@ export class ProductProperty {
     propertyId: number;
     isRequired?: boolean;
     displayOrder?: number;
+    defaultValue?: string | null;
+    isActive?: boolean;
   }): ProductProperty {
     return new ProductProperty(props);
   }
@@ -49,6 +57,8 @@ export class ProductProperty {
     propertyId: number;
     isRequired: boolean;
     displayOrder: number;
+    defaultValue: string | null;
+    isActive: boolean;
     createdAt: Date;
   }): ProductProperty {
     return new ProductProperty(props);
@@ -111,5 +121,21 @@ export class ProductProperty {
 
   getCreatedAt(): Date {
     return this.createdAt;
+  }
+
+  getDefaultValue(): string | null {
+    return this.defaultValue;
+  }
+
+  setDefaultValue(value: string | null): void {
+    this.defaultValue = value;
+  }
+
+  getIsActive(): boolean {
+    return this.isActive;
+  }
+
+  setIsActive(active: boolean): void {
+    this.isActive = active;
   }
 }

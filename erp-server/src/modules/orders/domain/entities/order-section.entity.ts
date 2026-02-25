@@ -9,6 +9,7 @@ export class OrderSection {
   private orderId: number;
   private sectionNumber: number;
   private name: string;
+  private headerId: number | null;
   private description: string | null;
   private items: OrderItem[];
   private createdAt: Date;
@@ -19,6 +20,7 @@ export class OrderSection {
     orderId: number;
     sectionNumber: number;
     name: string;
+    headerId?: number | null;
     description?: string | null;
     items?: OrderItem[];
     createdAt?: Date;
@@ -28,6 +30,7 @@ export class OrderSection {
     this.orderId = props.orderId;
     this.sectionNumber = props.sectionNumber;
     this.name = props.name;
+    this.headerId = props.headerId ?? null;
     this.description = props.description ?? null;
     this.items = props.items ?? [];
     this.createdAt = props.createdAt ?? new Date();
@@ -40,6 +43,7 @@ export class OrderSection {
     orderId: number;
     sectionNumber: number;
     name: string;
+    headerId?: number | null;
     description?: string | null;
   }): OrderSection {
     return new OrderSection(props);
@@ -50,6 +54,7 @@ export class OrderSection {
     orderId: number;
     sectionNumber: number;
     name: string;
+    headerId: number | null;
     description: string | null;
     items: OrderItem[];
     createdAt: Date;
@@ -59,9 +64,6 @@ export class OrderSection {
   }
 
   private validate(): void {
-    if (this.orderId <= 0) {
-      throw new DomainException('ID заказа должен быть положительным');
-    }
     if (this.sectionNumber < 0) {
       throw new DomainException('Номер секции не может быть отрицательным');
     }
@@ -135,6 +137,10 @@ export class OrderSection {
 
   getDescription(): string | null {
     return this.description;
+  }
+
+  getHeaderId(): number | null {
+    return this.headerId;
   }
 
   getItems(): OrderItem[] {

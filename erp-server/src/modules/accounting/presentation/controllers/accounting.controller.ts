@@ -40,7 +40,7 @@ export class AccountingController {
     private readonly paymentAllocationService: PaymentAllocationService,
     @Inject(CLIENT_BALANCE_REPOSITORY)
     private readonly clientBalanceRepository: IClientBalanceRepository,
-  ) {}
+  ) { }
 
   /**
    * Register a new payment
@@ -52,7 +52,7 @@ export class AccountingController {
     @Body() dto: RegisterPaymentDto,
     @Request() req: any,
   ): Promise<PaymentResponseDto> {
-    const userId = req.user?.userId || 1; // TODO: Get from JWT
+    const userId = req.user?.userId || 1;
 
     const result = await this.paymentRegistrationService.registerPayment({
       clientId: dto.clientId,
@@ -257,7 +257,7 @@ export class AccountingController {
     @Body() dto: AllocatePaymentDto,
     @Request() req: any,
   ): Promise<AllocationResultDto> {
-    const userId = req.user?.userId || 1; // TODO: Get from JWT
+    const userId = req.user?.userId || 1;
 
     const result = await this.paymentAllocationService.allocatePaymentToOrder({
       clientId: dto.clientId,

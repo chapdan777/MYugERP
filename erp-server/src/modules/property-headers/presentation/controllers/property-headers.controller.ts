@@ -120,6 +120,10 @@ export class PropertyHeadersController {
     return await this.addItemToHeaderUseCase.execute(id, dto);
   }
 
+  @Delete(':id/items/:propertyId')
+  @ApiOperation({ summary: 'Удалить элемент из шапки' })
+  @ApiResponse({ status: 204, description: 'Элемент удален' })
+  @ApiResponse({ status: 404, description: 'Элемент не найден' })
   async removeItem(
     @Param('id', ParseIntPipe) id: number,
     @Param('propertyId', ParseIntPipe) propertyId: number,
@@ -156,6 +160,36 @@ export class PropertyHeadersController {
   async getProducts(
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return await this.getHeaderProductsUseCase.execute(id);
+    const items = await this.getHeaderProductsUseCase.execute(id);
+    // Return the relationship entities so frontend gets headerId and productId
+    // serialization will handle getting the necessary fields
+    return items.map(item => {
+      const product = item.getProduct();
+      if (product) {
+        return {
+          id: product.getId(),
+          name: product.getName(),
+          code: product.getCode(),
+          category: product.getCategory(),
+          description: product.getDescription(),
+          basePrice: product.getBasePrice(),
+          unit: product.getUnit().getValue(), // ensure we get the string value too
+          defaultLength: product.getDefaultLength(),
+          defaultWidth: product.getDefaultWidth(),
+          defaultDepth: product.getDefaultDepth(),
+          isActive: product.getIsActive(),
+          // Link fields
+          headerId: item.getHeaderId(),
+          productId: item.getProductId(),
+          createdAt: item.getCreatedAt(),
+        };
+      }
+      // Fallback if product is not loaded
+      return {
+        headerId: item.getHeaderId(),
+        productId: item.getProductId(),
+        createdAt: item.getCreatedAt(),
+      };
+    });
   }
 }

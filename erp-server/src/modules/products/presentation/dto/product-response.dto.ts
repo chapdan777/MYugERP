@@ -12,6 +12,9 @@ export class ProductResponseDto {
   description!: string | null;
   basePrice!: number;
   unit!: string;
+  defaultLength!: number | null;
+  defaultWidth!: number | null;
+  defaultDepth!: number | null;
   isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;
@@ -25,6 +28,9 @@ export class ProductResponseDto {
     dto.description = product.getDescription();
     dto.basePrice = product.getBasePrice();
     dto.unit = product.getUnit().getValue();
+    dto.defaultLength = product.getDefaultLength();
+    dto.defaultWidth = product.getDefaultWidth();
+    dto.defaultDepth = product.getDefaultDepth();
     dto.isActive = product.getIsActive();
     dto.createdAt = product.getCreatedAt();
     dto.updatedAt = product.getUpdatedAt();

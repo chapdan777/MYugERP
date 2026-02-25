@@ -1,14 +1,18 @@
 import { DomainException } from '../../../../common/exceptions/domain.exception';
+import { OperationCalculationType } from '../enums/operation-calculation-type.enum';
 
 /**
- * Operation entity - represents a production operation
- * Examples: cutting, drilling, painting, assembly
+ * Производственная операция
+ * @description Представляет операцию производственного процесса (фрезеровка, сверление, покраска и т.д.)
  */
 export class Operation {
   private id?: number;
   private code: string;
   private name: string;
   private description: string | null;
+  private calculationType: OperationCalculationType;
+  private defaultTimePerUnit: number;
+  private defaultRatePerUnit: number;
   private isActive: boolean;
   private createdAt: Date;
   private updatedAt: Date;
@@ -18,6 +22,9 @@ export class Operation {
     code: string;
     name: string;
     description?: string | null;
+    calculationType?: OperationCalculationType;
+    defaultTimePerUnit?: number;
+    defaultRatePerUnit?: number;
     isActive?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
@@ -26,6 +33,9 @@ export class Operation {
     this.code = props.code;
     this.name = props.name;
     this.description = props.description ?? null;
+    this.calculationType = props.calculationType ?? OperationCalculationType.PER_PIECE;
+    this.defaultTimePerUnit = props.defaultTimePerUnit ?? 0;
+    this.defaultRatePerUnit = props.defaultRatePerUnit ?? 0;
     this.isActive = props.isActive ?? true;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
@@ -34,25 +44,31 @@ export class Operation {
   }
 
   /**
-   * Factory method to create a new operation
+   * Фабричный метод для создания новой операции
    */
   static create(props: {
     code: string;
     name: string;
     description?: string | null;
+    calculationType?: OperationCalculationType;
+    defaultTimePerUnit?: number;
+    defaultRatePerUnit?: number;
     isActive?: boolean;
   }): Operation {
     return new Operation(props);
   }
 
   /**
-   * Factory method to restore from database
+   * Фабричный метод для восстановления из базы данных
    */
   static restore(props: {
     id: number;
     code: string;
     name: string;
     description: string | null;
+    calculationType: OperationCalculationType;
+    defaultTimePerUnit: number;
+    defaultRatePerUnit: number;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -61,34 +77,61 @@ export class Operation {
   }
 
   /**
-   * Validate operation invariants
+   * Валидация инвариантов операции
    */
   private validate(): void {
     if (!this.code || this.code.trim().length === 0) {
-      throw new DomainException('Operation code is required');
+      throw new DomainException('Код операции обязателен');
     }
     if (!this.name || this.name.trim().length === 0) {
-      throw new DomainException('Operation name is required');
+      throw new DomainException('Название операции обязательно');
+    }
+    if (this.defaultTimePerUnit < 0) {
+      throw new DomainException('Норма времени не может быть отрицательной');
+    }
+    if (this.defaultRatePerUnit < 0) {
+      throw new DomainException('Расценка не может быть отрицательной');
     }
   }
 
   /**
-   * Update operation information
+   * Обновить информацию об операции
    */
   updateInfo(props: {
     name?: string;
     description?: string | null;
+    calculationType?: OperationCalculationType;
+    defaultTimePerUnit?: number;
+    defaultRatePerUnit?: number;
     isActive?: boolean;
   }): void {
     if (props.name !== undefined) {
       if (!props.name || props.name.trim().length === 0) {
-        throw new DomainException('Operation name cannot be empty');
+        throw new DomainException('Название операции не может быть пустым');
       }
       this.name = props.name.trim();
     }
 
     if (props.description !== undefined) {
       this.description = props.description;
+    }
+
+    if (props.calculationType !== undefined) {
+      this.calculationType = props.calculationType;
+    }
+
+    if (props.defaultTimePerUnit !== undefined) {
+      if (props.defaultTimePerUnit < 0) {
+        throw new DomainException('Норма времени не может быть отрицательной');
+      }
+      this.defaultTimePerUnit = props.defaultTimePerUnit;
+    }
+
+    if (props.defaultRatePerUnit !== undefined) {
+      if (props.defaultRatePerUnit < 0) {
+        throw new DomainException('Расценка не может быть отрицательной');
+      }
+      this.defaultRatePerUnit = props.defaultRatePerUnit;
     }
 
     if (props.isActive !== undefined) {
@@ -99,7 +142,7 @@ export class Operation {
   }
 
   /**
-   * Activate operation
+   * Активировать операцию
    */
   activate(): void {
     this.isActive = true;
@@ -107,14 +150,14 @@ export class Operation {
   }
 
   /**
-   * Deactivate operation
+   * Деактивировать операцию
    */
   deactivate(): void {
     this.isActive = false;
     this.updatedAt = new Date();
   }
 
-  // Getters
+  // Геттеры
   getId(): number | undefined {
     return this.id;
   }
@@ -129,6 +172,18 @@ export class Operation {
 
   getDescription(): string | null {
     return this.description;
+  }
+
+  getCalculationType(): OperationCalculationType {
+    return this.calculationType;
+  }
+
+  getDefaultTimePerUnit(): number {
+    return this.defaultTimePerUnit;
+  }
+
+  getDefaultRatePerUnit(): number {
+    return this.defaultRatePerUnit;
   }
 
   getIsActive(): boolean {

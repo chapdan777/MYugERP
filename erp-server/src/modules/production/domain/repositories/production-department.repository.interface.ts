@@ -10,6 +10,7 @@ export abstract class IProductionDepartmentRepository {
   abstract findByCode(code: string): Promise<ProductionDepartment | null>;
   abstract findAll(): Promise<ProductionDepartment[]>;
   abstract findAllActive(): Promise<ProductionDepartment[]>;
+  abstract findByOperationId(operationId: number): Promise<any[]>; // Returns { departmentId, departmentName, priority }
   abstract delete(id: number): Promise<void>;
 }
 

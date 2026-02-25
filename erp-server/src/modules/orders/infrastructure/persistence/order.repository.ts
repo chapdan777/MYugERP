@@ -40,12 +40,16 @@ export class OrderRepository implements IOrderRepository {
     fromDate?: Date;
     toDate?: Date;
   }): Promise<Order[]> {
-    const orderEntities = await this.orderRepository.find({ where: filters, relations: ['sections', 'sections.items', 'sections.items.properties'] });
+    const orderEntities = await this.orderRepository.find({
+      where: filters,
+      relations: ['sections', 'sections.items', 'sections.items.properties'],
+      order: { createdAt: 'DESC' }
+    });
     return orderEntities.map(OrderMapper.toDomain);
   }
 
   async delete(id: number): Promise<void> {
-    await this.orderRepository.delete(id);
+    await this.orderRepository.softDelete(id);
   }
 
   async generateOrderNumber(): Promise<string> {

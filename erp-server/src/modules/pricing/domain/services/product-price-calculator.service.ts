@@ -1,6 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PriceModifier } from '../entities/price-modifier.entity';
 import { ModifierType } from '../enums/modifier-type.enum';
+import { IPriceModifierRepository } from '../repositories/price-modifier.repository.interface';
+import { PRICE_MODIFIER_REPOSITORY } from '../repositories/injection-tokens';
+import { PRODUCT_REPOSITORY, PRODUCT_PROPERTY_REPOSITORY } from '../../../products/domain/repositories/injection-tokens';
+import { IProductRepository } from '../../../products/domain/repositories/product.repository.interface';
+import { IProductPropertyRepository } from '../../../products/domain/repositories/product-property.repository.interface';
+import { ProductProperty as DbProductProperty } from '../../../products/domain/entities/product-property.entity';
 
 // Интерфейсы для внешних сервисов (будут реализованы при интеграции)
 export interface Product {
@@ -62,26 +68,35 @@ interface AppliedModifier {
 
 @Injectable()
 export class ProductPriceCalculatorService {
+  constructor(
+    @Inject(PRICE_MODIFIER_REPOSITORY)
+    private readonly modifierRepository: IPriceModifierRepository,
+    @Inject(PRODUCT_REPOSITORY)
+    private readonly productRepository: IProductRepository,
+    @Inject(PRODUCT_PROPERTY_REPOSITORY)
+    private readonly productPropertyRepository: IProductPropertyRepository,
+  ) { }
+
   /**
    * Основной метод расчета цены с учетом продукта и его свойств
    */
   async calculatePrice(context: CalculationContext): Promise<PriceCalculationResult> {
     // 1. Получить продукт (в реальной реализации через Product модуль)
     const product = await this.getProductById(context.productId);
-    
+
     // 2. Рассчитать единицы измерения
     const dimensions = this.calculateDimensions(product, context);
     const unitMeasurement = this.calculateUnitMeasurement(product, dimensions);
-    
+
     // 3. Получить базовую цену
     const basePrice = product.basePrice;
-    
+
     // 4. Получить активные свойства (дефолтные + выбранные пользователем)
     const activeProperties = this.getActiveProperties(product, context.userSelectedProperties);
-    
+
     // 5. Найти применимые модификаторы
     const applicableModifiers = await this.getApplicableModifiers(activeProperties);
-    
+
     // 6. Разделить модификаторы на аддитивные и мультипликативные
     const additiveModifiers = applicableModifiers.filter(
       m => m.getModifierType() === ModifierType.FIXED_AMOUNT || m.getModifierType() === ModifierType.PERCENTAGE
@@ -89,15 +104,15 @@ export class ProductPriceCalculatorService {
     const multiplicativeModifiers = applicableModifiers.filter(
       m => m.getModifierType() === ModifierType.MULTIPLIER
     );
-    
+
     // 7. Применить аддитивные модификаторы к БАЗОВОЙ цене
     let priceAfterAdditive = basePrice;
     const appliedModifiers: AppliedModifier[] = [];
-    
+
     for (const modifier of additiveModifiers) {
       const appliedValue = this.applyAdditiveModifier(priceAfterAdditive, modifier);
       priceAfterAdditive += appliedValue;
-      
+
       appliedModifiers.push({
         modifierId: modifier.getId()!,
         name: modifier.getName(),
@@ -109,14 +124,14 @@ export class ProductPriceCalculatorService {
         appliedValue,
       });
     }
-    
+
     // 8. Применить мультипликативные модификаторы к цене после аддитивных
     let priceAfterMultiplicative = priceAfterAdditive;
     for (const modifier of multiplicativeModifiers) {
       const factor = this.getMultiplicativeFactor(modifier);
       const oldValue = priceAfterMultiplicative;
       priceAfterMultiplicative *= factor;
-      
+
       appliedModifiers.push({
         modifierId: modifier.getId()!,
         name: modifier.getName(),
@@ -128,20 +143,20 @@ export class ProductPriceCalculatorService {
         appliedValue: priceAfterMultiplicative - oldValue,
       });
     }
-    
+
     // 9. Цена за 1 м²/п.м./шт после всех модификаторов (новое поле unitPrice)
     const unitPrice = priceAfterMultiplicative;
-    
+
     // 10. Применить площадь/единицы измерения (новое поле modifiedUnitPrice)
     const modifiedUnitPrice = unitPrice * unitMeasurement;
-    
+
     // 11. Применить коэффициент
     const coefficient = context.coefficient || 1;
     const priceWithCoefficient = modifiedUnitPrice * coefficient;
-    
+
     // 12. Применить количество
     const finalPrice = priceWithCoefficient * context.quantity;
-    
+
     return {
       basePrice,                           // Базовая цена номенклатуры (1500)
       unitPrice,                           // Цена за 1 м²/п.м./шт после модификаторов (3900)
@@ -160,41 +175,27 @@ export class ProductPriceCalculatorService {
    * Получить продукт по ID (заглушка - будет заменена на реальный вызов)
    */
   private async getProductById(productId: number): Promise<Product> {
-    // TODO: Заменить на реальный вызов Product модуля
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new Error(`Продукт с ID ${productId} не найден`);
+    }
+
+    const properties = await this.productPropertyRepository.findByProductId(productId);
+
     return {
-      id: productId,
-      name: 'Фасад с филенкой',
-      basePrice: 1500,
-      unit: 'm2',
-      defaultLength: 2.0,
-      defaultWidth: 0.8,
-      defaultDepth: 0.018,
-      properties: [
-        {
-          propertyId: 1,
-          propertyName: 'Модель фасада',
-          isActive: true,
-          defaultValue: 'Вероника',
-        },
-        {
-          propertyId: 2,
-          propertyName: 'Филенка',
-          isActive: true,
-          defaultValue: 'Стандарт с рубашкой 1,5мм',
-        },
-        {
-          propertyId: 3,
-          propertyName: 'Материал филенки',
-          isActive: true,
-          defaultValue: 'Массив',
-        },
-        {
-          propertyId: 4,
-          propertyName: 'Приклейка декора',
-          isActive: false, // Отключено по умолчанию
-          defaultValue: 'Да',
-        },
-      ],
+      id: product.getId()!,
+      name: product.getName(),
+      basePrice: product.getBasePrice(),
+      unit: product.getUnit().getValue() as any,
+      defaultLength: product.getDefaultLength() || 0,
+      defaultWidth: product.getDefaultWidth() || 0,
+      defaultDepth: product.getDefaultDepth() || 0,
+      properties: properties.map((prop: DbProductProperty) => ({
+        propertyId: prop.getPropertyId(),
+        propertyName: `Property ${prop.getPropertyId()}`,
+        isActive: prop.getIsActive(),
+        defaultValue: prop.getDefaultValue() || '',
+      })),
     };
   }
 
@@ -215,13 +216,13 @@ export class ProductPriceCalculatorService {
   private calculateUnitMeasurement(product: Product, dimensions: { length: number; width: number; depth: number }): number {
     switch (product.unit) {
       case 'm2':
-        // Площадь = длина × ширина
-        return dimensions.length * dimensions.width;
-        
+        // Площадь = (длина * ширина) / 1000000 (перевод из мм² в м²)
+        return (dimensions.length * dimensions.width) / 1000000;
+
       case 'linear_meter':
-        // Погонные метры = длина
-        return dimensions.length;
-        
+        // Погонные метры = длина / 1000 (перевод из мм в м)
+        return dimensions.length / 1000;
+
       case 'unit':
       default:
         // Штуки = 1
@@ -233,118 +234,57 @@ export class ProductPriceCalculatorService {
    * Получить активные свойства (дефолтные + выбранные пользователем)
    */
   private getActiveProperties(product: Product, userSelectedProperties: Array<{ propertyId: number; value: string }>): ProductProperty[] {
-    // Начинаем с дефолтных активных свойств
-    const activeProperties = product.properties.filter(prop => prop.isActive);
-    
-    // Добавляем свойства, включенные пользователем
-    userSelectedProperties.forEach(userProp => {
-      const existingProp = activeProperties.find(p => p.propertyId === userProp.propertyId);
-      if (existingProp) {
-        // Обновляем значение
-        existingProp.currentValue = userProp.value;
-      } else {
-        // Добавляем новое активное свойство
-        const productProp = product.properties.find(p => p.propertyId === userProp.propertyId);
-        if (productProp) {
-          activeProperties.push({
-            ...productProp,
-            currentValue: userProp.value,
-          });
-        }
-      }
+    // 1. Берем все АКТИВНЫЕ дефолтные свойства продукта
+    const activeProductProps = product.properties.filter(prop => prop.isActive);
+
+    const resultMap = new Map<number, ProductProperty>();
+
+    // Заполняем мапу дефолтными активными свойствами
+    activeProductProps.forEach(prop => {
+      resultMap.set(prop.propertyId, { ...prop });
     });
-    
-    return activeProperties;
+
+    // 2. Накатываем сверху пользовательские свойства (переопределяют дефолтные или добавляют новые, включая активацию скрытых)
+    if (userSelectedProperties && userSelectedProperties.length > 0) {
+      userSelectedProperties.forEach(userProp => {
+        resultMap.set(userProp.propertyId, {
+          propertyId: userProp.propertyId,
+          propertyName: `Property ${userProp.propertyId}`,
+          isActive: true, // Пользовательские свойства всегда активны
+          defaultValue: userProp.value,
+          currentValue: userProp.value,
+        });
+      });
+    }
+
+    return Array.from(resultMap.values());
   }
 
   /**
    * Получить применимые модификаторы для активных свойств
+   * Использует реальные модификаторы из базы данных
    */
   private async getApplicableModifiers(activeProperties: ProductProperty[]): Promise<PriceModifier[]> {
-    // TODO: Заменить на реальный вызов репозитория модификаторов
-    // Пока возвращаем заглушку с примерами
-    
-    const modifiers: PriceModifier[] = [];
-    
-    // Примеры модификаторов из ТЗ
+    // Получить все активные модификаторы из БД
+    const allModifiers = await this.modifierRepository.findAllActive();
+
+    // Создать Map со значениями свойств для проверки применимости
+    const propertyValuesMap = new Map<number, string>();
     activeProperties.forEach(prop => {
-      switch (prop.propertyName) {
-        case 'Модель фасада':
-          if (prop.currentValue || prop.defaultValue === 'Вероника') {
-            // Модель фасада="Вероника": +1000р
-            modifiers.push(this.createMockModifier({
-              name: 'Модель Вероника',
-              code: 'MODEL_VERONICA',
-              modifierType: ModifierType.FIXED_AMOUNT,
-              value: 1000,
-              propertyId: prop.propertyId,
-              propertyValue: prop.currentValue || prop.defaultValue,
-            }));
-          }
-          break;
-          
-        case 'Филенка':
-          if (prop.currentValue || prop.defaultValue === 'Стандарт с рубашкой 1,5мм') {
-            // Филенка="Стандарт с рубашкой 1,5мм": +500р
-            modifiers.push(this.createMockModifier({
-              name: 'Филенка стандарт',
-              code: 'FRAME_STANDARD',
-              modifierType: ModifierType.FIXED_AMOUNT,
-              value: 500,
-              propertyId: prop.propertyId,
-              propertyValue: prop.currentValue || prop.defaultValue,
-            }));
-          }
-          break;
-          
-        case 'Материал филенки':
-          const materialValue = prop.currentValue || prop.defaultValue;
-          if (materialValue === 'Массив') {
-            // Материал филенки="Массив": *1.3
-            modifiers.push(this.createMockModifier({
-              name: 'Материал массив',
-              code: 'MATERIAL_ARRAY',
-              modifierType: ModifierType.MULTIPLIER,
-              value: 1.3,
-              propertyId: prop.propertyId,
-              propertyValue: prop.currentValue || prop.defaultValue,
-            }));
-          }
-          break;
-          
-        case 'Приклейка декора':
-          if ((prop.currentValue || prop.defaultValue) === 'Да') {
-            // Приклейка декора: *1.3
-            modifiers.push(this.createMockModifier({
-              name: 'Приклейка декора',
-              code: 'DECOR_ATTACHMENT',
-              modifierType: ModifierType.MULTIPLIER,
-              value: 1.3,
-              propertyId: prop.propertyId,
-              propertyValue: 'Да',
-            }));
-          }
-          break;
-      }
+      const effectiveValue = prop.currentValue || prop.defaultValue;
+      propertyValuesMap.set(prop.propertyId, effectiveValue);
     });
-    
-    return modifiers;
+
+    // Отфильтровать только применимые модификаторы
+    const applicableModifiers = allModifiers.filter(modifier => {
+      return modifier.isApplicableFor(propertyValuesMap);
+    });
+
+    // Отсортировать по приоритету (меньше = раньше)
+    return applicableModifiers.sort((a, b) => a.getPriority() - b.getPriority());
   }
 
-  /**
-   * Создать заглушку модификатора (временно)
-   */
-  private createMockModifier(props: any): PriceModifier {
-    return PriceModifier.create({
-      name: props.name,
-      code: props.code,
-      modifierType: props.modifierType,
-      value: props.value,
-      propertyId: props.propertyId,
-      propertyValue: props.propertyValue,
-      priority: 0,
-    });
-  }
+
 
   /**
    * Получить множитель для мультипликативного модификатора
@@ -367,22 +307,22 @@ export class ProductPriceCalculatorService {
    */
   private applyAdditiveModifier(currentPrice: number, modifier: PriceModifier): number {
     const modifierValue = modifier.getValue();
-    
+
     switch (modifier.getModifierType()) {
       case ModifierType.PERCENTAGE:
         return currentPrice * (modifierValue / 100);
-        
+
       case ModifierType.FIXED_PRICE:
         return modifierValue - currentPrice;
-        
+
       case ModifierType.PER_UNIT:
         // Для PER_UNIT нужно знать единицы измерения, 
         // пока используем 1 как заглушку
         return modifierValue * 1;
-        
+
       case ModifierType.FIXED_AMOUNT:
         return modifierValue;
-        
+
       default:
         throw new Error(`Неверный тип аддитивного модификатора: ${modifier.getModifierType()}`);
     }

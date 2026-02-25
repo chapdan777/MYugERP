@@ -22,6 +22,15 @@ export class OrderItemEntity {
   @Column()
   productName!: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  length?: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  width?: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  depth?: number;
+
   @Column()
   quantity!: number;
 

@@ -5,6 +5,13 @@ export class PropertyValueResponseDto {
   propertyId!: number;
   value!: string;
   priceModifierId!: number | null;
+  priceModifier!: {
+    id: number;
+    name: string;
+    value: number;
+    type: string;
+    code: string;
+  } | null;
   displayOrder!: number;
   isActive!: boolean;
   createdAt!: Date;
@@ -19,9 +26,12 @@ export class CreatePropertyValueRequestDto {
   @IsString()
   value!: string;
 
-  @IsNumber()
   @IsOptional()
   priceModifierId?: number | null;
+
+  @IsString()
+  @IsOptional()
+  priceModifierValue?: string;
 
   @IsNumber()
   @Min(0)
@@ -38,9 +48,12 @@ export class UpdatePropertyValueRequestDto {
   @IsOptional()
   value?: string;
 
-  @IsNumber()
   @IsOptional()
   priceModifierId?: number | null;
+
+  @IsString()
+  @IsOptional()
+  priceModifierValue?: string;
 
   @IsNumber()
   @Min(0)

@@ -14,7 +14,7 @@ export class PriceModifierMapper {
       name: entity.name,
       code: entity.code,
       modifierType: entity.modifierType,
-      value: entity.value,
+      value: Number(entity.value), // Конвертируем DECIMAL (строку) в число
       propertyId: entity.propertyId,
       propertyValue: entity.propertyValue,
       conditionExpression: entity.conditionExpression,

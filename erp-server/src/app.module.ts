@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -21,6 +22,8 @@ import { JwtAuthGuard } from './core/guards/jwt-auth.guard';
 import { ProductionModule } from './modules/production/production.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
+import { CommonModule } from './modules/common/common.module';
+import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 
 /**
  * Корневой модуль приложения ERP-сервера
@@ -50,6 +53,8 @@ import { AccountingModule } from './modules/accounting/accounting.module';
         autoLoadEntities: true,
       }),
     }),
+    // Event Emitter (Global)
+    EventEmitterModule.forRoot(),
     // Модуль аутентификации (JWT стратегии)
     AuthModule,
     // Модуль управления пользователями
@@ -74,6 +79,10 @@ import { AccountingModule } from './modules/accounting/accounting.module';
     WorkforceModule,
     // Модуль бухгалтерии
     AccountingModule,
+    // Общий модуль (формулы и т.д.)
+    CommonModule,
+    // Модуль заказ-нарядов
+    WorkOrdersModule,
     // Здесь будут подключаться остальные модули доменов
   ],
   controllers: [AppController],
@@ -91,4 +100,4 @@ import { AccountingModule } from './modules/accounting/accounting.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
