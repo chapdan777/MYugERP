@@ -12,6 +12,9 @@ export class CreateProductDto {
   description?: string;
   basePrice!: number;
   unit!: string;
+  defaultLength?: number;
+  defaultWidth?: number;
+  defaultDepth?: number;
 }
 
 /**
@@ -22,7 +25,7 @@ export class CreateProductUseCase {
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: IProductRepository,
-  ) {}
+  ) { }
 
   async execute(dto: CreateProductDto): Promise<Product> {
     // Проверка уникальности кода
@@ -42,6 +45,9 @@ export class CreateProductUseCase {
       description: dto.description,
       basePrice: dto.basePrice,
       unit,
+      defaultLength: dto.defaultLength,
+      defaultWidth: dto.defaultWidth,
+      defaultDepth: dto.defaultDepth,
     });
 
     return this.productRepository.save(product);

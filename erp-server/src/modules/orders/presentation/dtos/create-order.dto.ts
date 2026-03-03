@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsNumber, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class CreateOrderItemDto {
@@ -21,7 +21,8 @@ class CreateOrderItemDto {
   depth?: number;
 
   @IsString()
-  unit!: string;
+  @IsOptional()
+  unit?: string;
 
   @IsOptional()
   @IsNumber()
@@ -41,15 +42,21 @@ class CreateOrderItemDto {
 }
 
 class CreateOrderSectionDto {
+  @IsOptional()
   @IsNumber()
-  sectionNumber!: number;
+  sectionNumber?: number;
 
   @IsString()
-  @IsNotEmpty()
-  sectionName!: string;
+  @IsOptional()
+  sectionName?: string;
 
+  @IsOptional()
   @IsNumber()
-  headerId!: number;
+  headerId?: number;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
 
   @IsOptional()
   @IsArray()
@@ -76,6 +83,10 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  startDate?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

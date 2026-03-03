@@ -36,6 +36,9 @@ export class UpdateProductUseCase {
     // Создание value object для единицы измерения если она обновляется
     const unit = dto.unit ? UnitOfMeasure.create(dto.unit) : undefined;
 
+    console.log('📦 UpdateProductUseCase executing for ID:', id);
+    console.log('📝 DTO received:', JSON.stringify(dto, null, 2));
+
     // Обновление через доменный метод
     product.updateInfo({
       name: dto.name,
@@ -48,6 +51,15 @@ export class UpdateProductUseCase {
       defaultDepth: dto.defaultDepth,
     });
 
-    return this.productRepository.save(product);
+    console.log('🛠 Product state after updateInfo:', {
+      name: product.getName(),
+      L: product.getDefaultLength(),
+      W: product.getDefaultWidth(),
+      D: product.getDefaultDepth()
+    });
+
+    const savedProduct = await this.productRepository.save(product);
+    console.log('✅ Product saved successfully');
+    return savedProduct;
   }
 }

@@ -66,6 +66,9 @@ export class ProductsController {
       description: dto.description || '',
       basePrice: dto.basePrice,
       unit: dto.unit,
+      defaultLength: dto.defaultLength,
+      defaultWidth: dto.defaultWidth,
+      defaultDepth: dto.defaultDepth,
     });
     return ProductResponseDto.fromDomain(product);
   }
@@ -141,6 +144,9 @@ export class ProductsController {
       basePrice: dto.basePrice,
       unit: dto.unit,
       category: dto.category,
+      defaultLength: dto.defaultLength,
+      defaultWidth: dto.defaultWidth,
+      defaultDepth: dto.defaultDepth,
     });
     return ProductResponseDto.fromDomain(product);
   }

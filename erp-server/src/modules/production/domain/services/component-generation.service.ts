@@ -2,21 +2,42 @@ import { Injectable, Logger } from '@nestjs/common';
 import { FormulaEvaluatorService } from '../../../common/services/formula-evaluator.service';
 import { OrderItemComponent } from '../entities/order-item-component.entity';
 
-// Интерфейс для входных данных (OrderItem)
+/**
+ * Входные данные позиции заказа для генерации компонентов
+ */
 interface OrderItemData {
     id: number;
     width: number;
     height: number;
     depth?: number;
-    properties: Record<string, any>; // Значения свойств (variables)
+    properties: Record<string, any>;
 }
 
-// Интерфейс для схемы декомпозиции (правила)
-interface ComponentSchema {
+/**
+ * Схема компонента с поддержкой рекурсии и условий
+ */
+export interface ComponentSchema {
     name: string;
     lengthFormula: string;
     widthFormula: string;
     quantityFormula: string;
+    childProductId?: number | null;
+    depthFormula?: string | null;
+    extraVariables?: Record<string, string> | null;
+    conditionFormula?: string | null;
+    sortOrder?: number;
+}
+
+/**
+ * Результат генерации компонента (расширенный, включает childProductId)
+ */
+export interface GeneratedComponent {
+    orderItemComponent: OrderItemComponent;
+    childProductId: number | null;
+    calculatedLength: number;
+    calculatedWidth: number;
+    calculatedDepth: number;
+    calculatedQuantity: number;
 }
 
 @Injectable()
@@ -36,37 +57,90 @@ export class ComponentGenerationService {
         orderItem: OrderItemData,
         schemas: ComponentSchema[],
     ): OrderItemComponent[] {
-        const context = this.buildContext(orderItem);
-        const components: OrderItemComponent[] = [];
+        const results = this.generateComponentsDetailed(orderItem, schemas);
+        return results.map(r => r.orderItemComponent);
+    }
 
-        for (const schema of schemas) {
+    /**
+     * Сгенерировать компоненты с расширенной информацией (childProductId, размеры)
+     * Используется для формирования BOM в заказ-наряде
+     */
+    generateComponentsDetailed(
+        orderItem: OrderItemData,
+        schemas: ComponentSchema[],
+    ): GeneratedComponent[] {
+        const baseContext = this.buildContext(orderItem);
+        const results: GeneratedComponent[] = [];
+
+        // Сортируем схемы по sortOrder
+        const sortedSchemas = [...schemas].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+        // Предварительный проход: собираем ВСЕ extraVariables из всех схем в общий контекст
+        const sharedContext: Record<string, number> = { ...baseContext };
+        for (const schema of sortedSchemas) {
+            if (schema.extraVariables) {
+                for (const [key, formula] of Object.entries(schema.extraVariables)) {
+                    if (sharedContext[key] !== undefined) continue; // Не перезаписываем уже вычисленные
+                    try {
+                        sharedContext[key] = this.formulaEvaluator.evaluate(formula, sharedContext);
+                    } catch {
+                        this.logger.warn(`Не удалось вычислить extraVariable "${key}" = "${formula}"`);
+                    }
+                }
+            }
+        }
+
+        this.logger.debug(`Общий контекст формул: ${JSON.stringify(sharedContext)}`);
+
+        for (const schema of sortedSchemas) {
             try {
-                const length = this.formulaEvaluator.evaluate(schema.lengthFormula, context);
-                const width = this.formulaEvaluator.evaluate(schema.widthFormula, context);
-                const quantity = this.formulaEvaluator.evaluate(schema.quantityFormula, context);
+                // Проверяем условие (если задано)
+                if (schema.conditionFormula) {
+                    try {
+                        const conditionResult = this.formulaEvaluator.evaluate(schema.conditionFormula, sharedContext);
+                        if (!conditionResult || conditionResult === 0) {
+                            this.logger.debug(`Компонент "${schema.name}" пропущен: условие "${schema.conditionFormula}" = false`);
+                            continue;
+                        }
+                    } catch {
+                        this.logger.warn(`Ошибка проверки условия для "${schema.name}", компонент включён по умолчанию`);
+                    }
+                }
+
+                const length = this.formulaEvaluator.evaluate(schema.lengthFormula, sharedContext);
+                const width = this.formulaEvaluator.evaluate(schema.widthFormula, sharedContext);
+                const quantity = this.formulaEvaluator.evaluate(schema.quantityFormula, sharedContext);
+                const depth = schema.depthFormula
+                    ? this.formulaEvaluator.evaluate(schema.depthFormula, sharedContext)
+                    : 0;
 
                 if (quantity > 0) {
-                    components.push(
-                        OrderItemComponent.create({
-                            orderItemId: orderItem.id,
-                            name: schema.name,
-                            length,
-                            width,
-                            quantity,
-                            formulaContext: context,
-                        }),
-                    );
+                    const component = OrderItemComponent.create({
+                        orderItemId: orderItem.id,
+                        name: schema.name,
+                        length,
+                        width,
+                        quantity,
+                        formulaContext: sharedContext,
+                    });
+
+                    results.push({
+                        orderItemComponent: component,
+                        childProductId: schema.childProductId ?? null,
+                        calculatedLength: length,
+                        calculatedWidth: width,
+                        calculatedDepth: depth,
+                        calculatedQuantity: quantity,
+                    });
                 }
             } catch (error: any) {
                 this.logger.error(
                     `Не удалось сгенерировать компонент "${schema.name}" для позиции заказа ${orderItem.id}: ${error.message}`,
                 );
-                // Можно выбрасывать ошибку или пропускать компонент, зависит от бизнес-логики.
-                // Пока логируем и пропускаем.
             }
         }
 
-        return components;
+        return results;
     }
 
     /**
@@ -81,8 +155,6 @@ export class ComponentGenerationService {
         };
 
         // Добавляем свойства, если они числовые
-        // TODO: Нужно убедиться, что свойства мапятся по variableName, а не просто по коду
-        // В текущей реализации мы ожидаем, что properties уже содержит ключами variableName
         for (const [key, value] of Object.entries(orderItem.properties)) {
             if (typeof value === 'number') {
                 context[key] = value;

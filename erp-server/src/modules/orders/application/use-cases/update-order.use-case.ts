@@ -42,12 +42,14 @@ export class UpdateOrderUseCase {
 
         // 4. Process sections and items if provided
         if (dto.sections && dto.sections.length > 0) {
-            for (const sectionDto of dto.sections) {
-                // Create section
+            for (let sIdx = 0; sIdx < dto.sections.length; sIdx++) {
+                const sectionDto = dto.sections[sIdx];
+                // Поддержка алиаса name -> sectionName
+                const sectionName = sectionDto.sectionName || sectionDto.name || `Секция ${sIdx + 1}`;
                 const section = OrderSection.create({
                     orderId: id,
-                    sectionNumber: sectionDto.sectionNumber,
-                    name: sectionDto.sectionName,
+                    sectionNumber: sectionDto.sectionNumber ?? (sIdx + 1),
+                    name: sectionName,
                     headerId: sectionDto.headerId || null,
                     description: '',
                 });
@@ -76,7 +78,7 @@ export class UpdateOrderUseCase {
                             length: itemDto.length,
                             width: itemDto.width,
                             depth: itemDto.depth,
-                            unitType: itemDto.unit as any,
+                            unitType: (itemDto.unit || 'шт') as any,
                             propertyValues: finalProperties.map(p => ({
                                 propertyId: p.propertyId,
                                 propertyValue: p.value

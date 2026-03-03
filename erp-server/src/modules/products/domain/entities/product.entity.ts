@@ -63,6 +63,9 @@ export class Product {
     description?: string | null;
     basePrice: number;
     unit: UnitOfMeasure;
+    defaultLength?: number | null;
+    defaultWidth?: number | null;
+    defaultDepth?: number | null;
   }): Product {
     return new Product(props);
   }

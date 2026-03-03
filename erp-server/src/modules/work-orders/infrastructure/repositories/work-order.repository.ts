@@ -17,7 +17,14 @@ export class WorkOrderRepository implements IWorkOrderRepository {
     async save(workOrder: WorkOrder): Promise<WorkOrder> {
         const persistenceEntity = WorkOrderMapper.toPersistence(workOrder);
         const savedEntity = await this.repository.save(persistenceEntity);
-        return WorkOrderMapper.toDomain(savedEntity);
+
+        // Перезагружаем сущность со всеми связями (items), чтобы вернуть полный доменный объект.
+        // Это необходимо, так как repository.save() может не возвращать вложенные коллекции в полном объеме.
+        const reloaded = await this.findById(savedEntity.id);
+        if (!reloaded) {
+            return WorkOrderMapper.toDomain(savedEntity);
+        }
+        return reloaded;
     }
 
     async findById(id: number): Promise<WorkOrder | null> {
@@ -87,5 +94,9 @@ export class WorkOrderRepository implements IWorkOrderRepository {
 
     async delete(id: number): Promise<void> {
         await this.repository.delete(id);
+    }
+
+    async deleteByOrderId(orderId: number): Promise<void> {
+        await this.repository.delete({ orderId });
     }
 }

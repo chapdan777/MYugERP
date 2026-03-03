@@ -60,6 +60,12 @@ export interface ComponentSchemaForGeneration {
   lengthFormula: string;
   widthFormula: string;
   quantityFormula: string;
+  childProductId?: number | null;
+  childProductName?: string | null;
+  depthFormula?: string | null;
+  extraVariables?: Record<string, string> | null;
+  conditionFormula?: string | null;
+  sortOrder?: number;
 }
 
 export interface OrderDataForGeneration {
@@ -107,19 +113,22 @@ export class WorkOrderGenerationService {
     const { orderData, operationSteps, operationRates, departmentsByOperation, operationMaterials, componentSchemas } = input;
 
     // Валидация входных данных
-    this.validateInput(orderData, operationSteps, departmentsByOperation);
+    this.validateInput(orderData, operationSteps, departmentsByOperation, componentSchemas);
 
-    const workOrders: WorkOrder[] = [];
+    // Карта для группировки ЗН: "departmentId-operationId" -> WorkOrder
+    const workOrderMap = new Map<string, WorkOrder>();
 
     // Расчет приоритета на основе дедлайна
     const priority = this.calculatePriorityFromDeadline(orderData.deadline);
 
     for (const item of orderData.items) {
-      // 1. Декомпозиция изделия на компоненты
+      // 1. Декомпозиция изделия на компоненты (BOM)
       const schemas = componentSchemas.get(item.productId) || [];
+      let bomComponents: any[] = [];
+
       if (schemas.length > 0) {
         try {
-          const components = this.componentGenerationService.generateComponents(
+          const detailedComponents = this.componentGenerationService.generateComponentsDetailed(
             {
               id: item.id,
               width: item.width,
@@ -132,28 +141,84 @@ export class WorkOrderGenerationService {
 
           // Сохраняем сгенерированные компоненты
           await this.orderItemComponentRepository.deleteByOrderItemId(item.id);
-          for (const component of components) {
-            await this.orderItemComponentRepository.save(component);
-            this.logger.debug(`Saved component ${component.getName()} for item ${item.id}`);
+          for (const dc of detailedComponents) {
+            await this.orderItemComponentRepository.save(dc.orderItemComponent);
           }
 
-          this.logger.log(`Сгенерировано и сохранено ${components.length} компонентов для позиции ${item.id}`);
+          // Формируем массив BOM для включения в ЗН
+          bomComponents = detailedComponents.map(dc => ({
+            name: dc.orderItemComponent.getName(),
+            childProductId: dc.childProductId,
+            childProductName: schemas.find(s => s.childProductId === dc.childProductId)?.childProductName || null,
+            length: Math.round(dc.calculatedLength * 100) / 100,
+            width: Math.round(dc.calculatedWidth * 100) / 100,
+            depth: Math.round(dc.calculatedDepth * 100) / 100,
+            quantity: dc.calculatedQuantity,
+          }));
+
+          this.logger.log(`Сгенерировано ${detailedComponents.length} BOM-компонентов для позиции ${item.id}`);
         } catch (e: any) {
           this.logger.error(`Ошибка генерации компонентов для позиции ${item.id}: ${e.message}`);
         }
       }
 
       const steps = operationSteps.get(item.productId);
+
+      // Если нет маршрута, но есть BOM-схемы — создаём ЗН «Деталировка»
       if (!steps || steps.length === 0) {
+        if (bomComponents.length > 0) {
+          const groupKey = `0-0`; // Группировка для BOM (участок 0, операция 0)
+          let workOrder = workOrderMap.get(groupKey);
+
+          if (!workOrder) {
+            const workOrderNumber = await this.workOrderRepository.generateWorkOrderNumber();
+            workOrder = WorkOrder.create({
+              workOrderNumber,
+              orderId: orderData.orderId,
+              orderNumber: orderData.orderNumber,
+              departmentId: 0,
+              departmentName: 'Деталировка (BOM)',
+              operationId: 0,
+              operationName: 'BOM-расчёт деталей',
+              priority,
+              deadline: orderData.deadline,
+            });
+            workOrderMap.set(groupKey, workOrder);
+          }
+
+          const workOrderItem = WorkOrderItem.create({
+            workOrderId: 0,
+            orderItemId: item.id,
+            productId: item.productId,
+            productName: item.productName,
+            operationId: 0,
+            operationName: 'BOM-расчёт деталей',
+            quantity: item.quantity,
+            unit: item.unit,
+            estimatedHours: 0,
+            pieceRate: 0,
+            calculatedMaterials: {
+              components: bomComponents,
+              dimensions: {
+                width: item.width,
+                height: item.height,
+                depth: item.depth || 0,
+              }
+            },
+          });
+
+          workOrder.addItem(workOrderItem);
+          continue;
+        }
+
         throw new DomainException(
           `Не найден технологический маршрут для продукта ${item.productId}`,
         );
       }
 
-      // Создание заказ-наряда для каждой операции
+      // Создание заказ-наряда для каждой операции (с группировкой)
       for (const step of steps) {
         // Skip operationId=0 - это псевдо-операция для "material-only" маршрутов
-        // Материалы будут связаны через другую операцию или рассчитаны отдельно
         if (step.operationId === 0) {
           this.logger.debug(`Пропущена операция 0 (material-only) для продукта ${item.productId}`);
           continue;
@@ -169,6 +234,26 @@ export class WorkOrderGenerationService {
 
         // Выбор участка с наивысшим приоритетом
         const selectedDepartment = this.selectOptimalDepartment(departments);
+        const groupKey = `${selectedDepartment.departmentId}-${step.operationId}`;
+
+        let workOrder = workOrderMap.get(groupKey);
+
+        if (!workOrder) {
+          // Генерация номера ЗН и создание нового ЗН для группы
+          const workOrderNumber = await this.workOrderRepository.generateWorkOrderNumber();
+          workOrder = WorkOrder.create({
+            workOrderNumber,
+            orderId: orderData.orderId,
+            orderNumber: orderData.orderNumber,
+            departmentId: selectedDepartment.departmentId,
+            departmentName: selectedDepartment.departmentName,
+            operationId: step.operationId,
+            operationName: step.operationName,
+            priority,
+            deadline: orderData.deadline,
+          });
+          workOrderMap.set(groupKey, workOrder);
+        }
 
         // Расчет трудоемкости и зарплаты
         const { estimatedHours, pieceRate } = this.calculateOperationMetrics(
@@ -184,22 +269,6 @@ export class WorkOrderGenerationService {
           operationMaterials
         );
 
-        // Генерация номера ЗН
-        const workOrderNumber = await this.workOrderRepository.generateWorkOrderNumber();
-
-        // Создание заказ-наряда
-        const workOrder = WorkOrder.create({
-          workOrderNumber,
-          orderId: orderData.orderId,
-          orderNumber: orderData.orderNumber,
-          departmentId: selectedDepartment.departmentId,
-          departmentName: selectedDepartment.departmentName,
-          operationId: step.operationId,
-          operationName: step.operationName,
-          priority,
-          deadline: orderData.deadline,
-        });
-
         // Создание позиции заказ-наряда
         const workOrderItem = WorkOrderItem.create({
           workOrderId: 0,
@@ -214,6 +283,7 @@ export class WorkOrderGenerationService {
           pieceRate,
           calculatedMaterials: {
             materials: calculatedMaterials,
+            components: bomComponents,
             dimensions: {
               width: item.width,
               height: item.height,
@@ -222,16 +292,20 @@ export class WorkOrderGenerationService {
           },
         });
 
-        // Добавление позиции
+        // Добавление позиции в сгруппированный ЗН
         workOrder.addItem(workOrderItem);
-
-        // Сохранение
-        const savedWorkOrder = await this.workOrderRepository.save(workOrder);
-        workOrders.push(savedWorkOrder);
       }
     }
 
-    return workOrders;
+    // Сохранение всех сгруппированных заказ-нарядов
+    const savedWorkOrders: WorkOrder[] = [];
+    for (const workOrder of workOrderMap.values()) {
+      const saved = await this.workOrderRepository.save(workOrder);
+      savedWorkOrders.push(saved);
+      this.logger.log(`Сохранен сгруппированный ЗН ${saved.getWorkOrderNumber()} для операции ${saved.getOperationName()} (${saved.getItems().length} поз.)`);
+    }
+
+    return savedWorkOrders;
   }
 
   /**
@@ -362,18 +436,18 @@ export class WorkOrderGenerationService {
   private validateInput(
     orderData: OrderDataForGeneration,
     operationSteps: Map<number, OperationStepForGeneration[]>,
-    departmentsByOperation: Map<number, DepartmentForOperation[]>,
+    _departmentsByOperation: Map<number, DepartmentForOperation[]>,
+    componentSchemas?: Map<number, ComponentSchemaForGeneration[]>,
   ): void {
     if (!orderData || !orderData.items || orderData.items.length === 0) {
       throw new DomainException('Заказ должен содержать хотя бы одну позицию');
     }
 
-    if (!operationSteps || operationSteps.size === 0) {
-      throw new DomainException('Необходимо предоставить этапы операций');
-    }
-
-    if (!departmentsByOperation || departmentsByOperation.size === 0) {
-      throw new DomainException('Необходимо предоставить маппинг участков');
+    // Если есть хотя бы маршруты или схемы — можно генерировать
+    const hasSteps = operationSteps && operationSteps.size > 0;
+    const hasSchemas = componentSchemas && componentSchemas.size > 0;
+    if (!hasSteps && !hasSchemas) {
+      throw new DomainException('Необходимо предоставить этапы операций или схемы компонентов');
     }
   }
 

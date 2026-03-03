@@ -19,6 +19,7 @@ export abstract class IWorkOrderRepository {
   abstract findAll(): Promise<WorkOrder[]>;
   abstract generateWorkOrderNumber(): Promise<string>;
   abstract delete(id: number): Promise<void>;
+  abstract deleteByOrderId(orderId: number): Promise<void>;
 }
 
 export const WORK_ORDER_REPOSITORY = Symbol('WORK_ORDER_REPOSITORY');

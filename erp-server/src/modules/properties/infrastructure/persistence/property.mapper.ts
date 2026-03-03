@@ -9,16 +9,23 @@ export class PropertyMapper {
   static toDomain(entity: PropertyEntity): Property {
     let possibleValues = entity.possibleValues;
 
-    // Если есть связанные значения, используем их приоритетно
-    if (entity.values && entity.values.length > 0) {
-      const activeValues = entity.values
-        .filter(v => v.isActive)
-        .sort((a, b) => a.displayOrder - b.displayOrder)
-        .map(v => v.value);
+    // Объединяем значения из JSON и из таблицы property_values
+    let dbValues: string[] = [];
+    try {
+      dbValues = entity.possibleValues ? JSON.parse(entity.possibleValues) : [];
+      if (!Array.isArray(dbValues)) dbValues = [];
+    } catch {
+      dbValues = [];
+    }
 
-      if (activeValues.length > 0) {
-        possibleValues = JSON.stringify(activeValues);
-      }
+    const tableValues = (entity.values || [])
+      .filter(v => v.isActive)
+      .map(v => v.value);
+
+    // Создаем уникальный набор всех значений (сохраняя приоритет существующих)
+    const combinedValues = Array.from(new Set([...dbValues, ...tableValues]));
+    if (combinedValues.length > 0) {
+      possibleValues = JSON.stringify(combinedValues);
     }
 
     return Property.restore({

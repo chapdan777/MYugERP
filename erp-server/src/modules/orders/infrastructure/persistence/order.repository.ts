@@ -53,9 +53,15 @@ export class OrderRepository implements IOrderRepository {
   }
 
   async generateOrderNumber(): Promise<string> {
-    // This is a simplified version. In a real application, you would have a more robust mechanism.
-    const lastOrder = await this.orderRepository.find({ order: { id: 'DESC' }, take: 1 });
-    const lastId = lastOrder.length > 0 ? lastOrder[0].id : 0;
-    return `ORDER-${lastId + 1}`;
+    // Учитываем все заказы включая удалённые, чтобы избежать коллизий номеров
+    const lastOrder = await this.orderRepository.find({
+      order: { id: 'DESC' },
+      take: 1,
+      withDeleted: true,
+    });
+    const lastNumber = lastOrder.length > 0
+      ? parseInt(lastOrder[0].orderNumber?.replace('ORDER-', '') || '0', 10)
+      : 0;
+    return `ORDER-${(lastNumber || lastOrder[0]?.id || 0) + 1}`;
   }
 }

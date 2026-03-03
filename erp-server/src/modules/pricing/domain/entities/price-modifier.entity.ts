@@ -148,7 +148,7 @@ export class PriceModifier {
     // Взаимоисключающие системы условий
     const hasLegacyConditions = this.propertyId !== null || this.propertyValue !== null;
     const hasComplexConditions = this.conditionExpression !== null;
-    
+
     if (hasLegacyConditions && hasComplexConditions) {
       throw new DomainException(
         'Нельзя одновременно использовать старую систему условий (propertyId/propertyValue) и новую (conditionExpression)',
@@ -193,7 +193,7 @@ export class PriceModifier {
           return false;
         }
       }
-      
+
       // Если нет evaluator, возвращаем true для обратной совместимости
       // В реальной реализации здесь должна быть логика оценки выражения
       return true;
@@ -202,7 +202,17 @@ export class PriceModifier {
     // Если есть простые условия - используем их
     if (this.propertyId) {
       const actualValue = propertyValues.get(this.propertyId);
-      return actualValue === this.propertyValue;
+
+      // Нормализация для поддержки различных представлений булевых значений
+      const normalize = (val: any) => {
+        if (val === null || val === undefined) return '';
+        const s = String(val).toLowerCase().trim();
+        if (s === 'true' || s === 'да' || s === 'yes' || s === '1') return 'да';
+        if (s === 'false' || s === 'нет' || s === 'no' || s === '0') return 'нет';
+        return s;
+      };
+
+      return normalize(actualValue) === normalize(this.propertyValue);
     }
 
     // Если нет ни простых, ни сложных условий - модификатор применим всегда

@@ -13,21 +13,23 @@ export interface CreateOrderDto {
   clientName?: string;
   deadline?: Date;
   notes?: string;
+  startDate?: string;
   sections?: {
-    sectionNumber: number;
-    sectionName: string;
+    sectionNumber?: number;
+    sectionName?: string;
+    name?: string;
     headerId?: number;
     propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
     items?: {
       productId: number;
       quantity: number;
-      unit: string;
+      unit?: string;
       length?: number;
       width?: number;
       depth?: number;
-      basePrice?: number; // Added to match
-      finalPrice?: number; // Added to match
-      note?: string; // Added to match
+      basePrice?: number;
+      finalPrice?: number;
+      note?: string;
       properties?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
     }[];
   }[];
@@ -64,12 +66,14 @@ export class CreateOrderUseCase {
 
     // 4. Process sections and items if provided
     if (dto.sections && dto.sections.length > 0) {
-      for (const sectionDto of dto.sections) {
-        // Create section
+      for (let sIdx = 0; sIdx < dto.sections.length; sIdx++) {
+        const sectionDto = dto.sections[sIdx];
+        // Поддержка алиаса name -> sectionName
+        const sectionName = sectionDto.sectionName || sectionDto.name || `Секция ${sIdx + 1}`;
         const section = OrderSection.create({
           orderId: order.getId() || 0,
-          sectionNumber: sectionDto.sectionNumber,
-          name: sectionDto.sectionName,
+          sectionNumber: sectionDto.sectionNumber ?? (sIdx + 1),
+          name: sectionName,
           headerId: sectionDto.headerId || null,
           description: '',
         });
@@ -98,7 +102,7 @@ export class CreateOrderUseCase {
               length: itemDto.length,
               width: itemDto.width,
               depth: itemDto.depth,
-              unitType: itemDto.unit as any,
+              unitType: (itemDto.unit || 'шт') as any,
               propertyValues: finalProperties.map(p => ({
                 propertyId: p.propertyId,
                 propertyValue: p.value

@@ -48,15 +48,24 @@ export class WorkOrderController {
     private readonly generateUseCase: GenerateWorkOrdersUseCase,
   ) { }
 
-  /**
-   * Generate work orders from an order
-   */
   @Post('generate')
   @ApiOperation({ summary: 'Генерация заказ-нарядов из заказа' })
   @ApiResponse({ status: 201, description: 'Заказ-наряды успешно сгенерированы', type: [WorkOrderResponseDto] })
   @HttpCode(HttpStatus.CREATED)
   async generateWorkOrders(@Body() dto: GenerateWorkOrdersDto): Promise<WorkOrderResponseDto[]> {
     const workOrders = await this.generateUseCase.execute(dto.orderId);
+    return workOrders.map(wo => WorkOrderResponseDto.fromEntity(wo));
+  }
+
+  /**
+   * Regenerate work orders from an order
+   */
+  @Post('regenerate')
+  @ApiOperation({ summary: 'Перегенерация заказ-нарядов из заказа (отменяет старые)' })
+  @ApiResponse({ status: 201, description: 'Заказ-наряды успешно перегенерированы', type: [WorkOrderResponseDto] })
+  @HttpCode(HttpStatus.CREATED)
+  async regenerateWorkOrders(@Body() dto: GenerateWorkOrdersDto): Promise<WorkOrderResponseDto[]> {
+    const workOrders = await this.generateUseCase.execute(dto.orderId, true);
     return workOrders.map(wo => WorkOrderResponseDto.fromEntity(wo));
   }
 
@@ -112,6 +121,7 @@ export class WorkOrderController {
     if (!workOrder) {
       throw new Error(`Work order with ID ${id} not found`);
     }
+    console.log(`[WorkOrderController] Found WO ${id} with ${workOrder.getItems().length} items`);
     return WorkOrderResponseDto.fromEntity(workOrder);
   }
 

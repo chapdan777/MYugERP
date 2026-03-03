@@ -1,4 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { WorkOrderGenerationService, OrderDataForGeneration, OperationStepForGeneration, OperationRateForGeneration, DepartmentForOperation, ComponentSchemaForGeneration } from '../../domain/services/work-order-generation.service';
 import { WorkOrder } from '../../domain/entities/work-order.entity';
 import { ORDER_REPOSITORY, IOrderRepository } from '../../../orders/domain/repositories/order.repository.interface';
@@ -9,6 +10,8 @@ import { PRODUCT_REPOSITORY } from '../../../products/domain/repositories/inject
 import { IProductRepository } from '../../../products/domain/repositories/product.repository.interface';
 import { OperationMaterialForGeneration } from '../../domain/services/work-order-generation.service';
 import { IOperationRepository, OPERATION_REPOSITORY } from '../../../production/domain/repositories/operation.repository.interface';
+import type { IProductComponentSchemaRepository } from '../../../production/domain/repositories/product-component-schema.repository.interface';
+import { PRODUCT_COMPONENT_SCHEMA_REPOSITORY } from '../../../production/domain/repositories/product-component-schema.repository.interface';
 
 @Injectable()
 export class GenerateWorkOrdersUseCase {
@@ -26,9 +29,12 @@ export class GenerateWorkOrdersUseCase {
         private readonly productRepository: IProductRepository,
         @Inject(OPERATION_REPOSITORY)
         private readonly operationRepository: IOperationRepository,
+        @Inject(PRODUCT_COMPONENT_SCHEMA_REPOSITORY)
+        private readonly schemaRepository: IProductComponentSchemaRepository,
+        private readonly dataSource: DataSource,
     ) { }
 
-    async execute(orderId: number): Promise<WorkOrder[]> {
+    async execute(orderId: number, regenerate: boolean = false): Promise<WorkOrder[]> {
         // 1. Получение заказа
         const order = await this.orderRepository.findById(orderId);
         if (!order) {
@@ -77,6 +83,27 @@ export class GenerateWorkOrdersUseCase {
                 propertiesVariableMap,
             };
         });
+
+        // Обогащение propertiesVariableMap дефолтными значениями свойств продукта
+        for (const item of itemsForGeneration) {
+            const propDefaults = await this.dataSource.query(`
+                SELECT p."variableName", p."defaultValue"
+                FROM product_properties pp
+                JOIN properties p ON pp."propertyId" = p.id
+                WHERE pp."productId" = $1
+                  AND p."variableName" IS NOT NULL
+                  AND p."defaultValue" IS NOT NULL
+            `, [item.productId]);
+
+            for (const pd of propDefaults) {
+                if (!item.propertiesVariableMap[pd.variableName]) {
+                    const numVal = parseFloat(pd.defaultValue);
+                    if (!isNaN(numVal)) {
+                        item.propertiesVariableMap[pd.variableName] = numVal;
+                    }
+                }
+            }
+        }
 
         console.log(`[GenerateWorkOrdersUseCase] Items for generation:`, JSON.stringify(itemsForGeneration.map(i => ({
             id: i.id,
@@ -153,6 +180,35 @@ export class GenerateWorkOrdersUseCase {
             }
         }
 
+        // Загрузка схем компонентов (BOM) из базы данных
+        for (const productId of productIds) {
+            const schemas = await this.schemaRepository.findByProductId(productId);
+            if (schemas.length > 0) {
+                const mappedSchemas: ComponentSchemaForGeneration[] = [];
+                for (const schema of schemas) {
+                    let childProductName: string | null = null;
+                    if (schema.hasChildProduct()) {
+                        const childProduct = await this.productRepository.findById(schema.getChildProductId()!);
+                        childProductName = childProduct ? childProduct.getName() : null;
+                    }
+                    mappedSchemas.push({
+                        name: schema.getName(),
+                        lengthFormula: schema.getLengthFormula(),
+                        widthFormula: schema.getWidthFormula(),
+                        quantityFormula: schema.getQuantityFormula(),
+                        childProductId: schema.getChildProductId(),
+                        childProductName,
+                        depthFormula: schema.getDepthFormula(),
+                        extraVariables: schema.getExtraVariables(),
+                        conditionFormula: schema.getConditionFormula(),
+                        sortOrder: schema.getSortOrder(),
+                    });
+                }
+                componentSchemas.set(productId, mappedSchemas);
+                console.log(`[BOM] Загружено ${mappedSchemas.length} схем компонентов для продукта ${productId}`);
+            }
+        }
+
         // Получение ставок (Глобальных или по операциям)
         const allRates = await this.rateRepository.findAll();
         const operationRates: OperationRateForGeneration[] = allRates.map(r => ({
@@ -163,6 +219,17 @@ export class GenerateWorkOrdersUseCase {
         }));
 
         // 4. Запуск генерации
+        if (regenerate) {
+            return this.generationService.regenerateWorkOrders(orderId, {
+                orderData,
+                operationSteps,
+                operationRates,
+                departmentsByOperation,
+                operationMaterials,
+                componentSchemas
+            });
+        }
+
         return this.generationService.generateWorkOrders({
             orderData,
             operationSteps,

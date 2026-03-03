@@ -20,6 +20,7 @@ import { CommonModule } from '../common/common.module';
 import { GenerateWorkOrdersUseCase } from './application/use-cases/generate-work-orders.use-case';
 import { OrdersModule } from '../orders/orders.module';
 import { ProductsModule } from '../products/products.module';
+import { OrderDeletedListener } from './application/listeners/order-deleted.listener';
 
 @Module({
     imports: [
@@ -53,6 +54,7 @@ import { ProductsModule } from '../products/products.module';
             provide: WORK_ORDER_STATUS_REPOSITORY,
             useClass: WorkOrderStatusRepository,
         },
+        OrderDeletedListener,
     ],
     exports: [
         WorkOrderGenerationService,

@@ -39,7 +39,7 @@ import {
 @ApiBearerAuth()
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles('admin', 'manager')
 export class UsersController {
   constructor(
     private readonly createUserUseCase: CreateUserUseCase,
@@ -51,16 +51,16 @@ export class UsersController {
     private readonly deactivateUserUseCase: DeactivateUserUseCase,
     private readonly softDeleteUserUseCase: SoftDeleteUserUseCase,
     private readonly restoreUserUseCase: RestoreUserUseCase,
-  ) {}
+  ) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать нового пользователя' })
   @ApiBody({ type: CreateUserDto })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Пользователь успешно создан', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 201,
+    description: 'Пользователь успешно создан',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -72,10 +72,10 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: 'Получить список всех неудаленных пользователей' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Список пользователей успешно получен', 
-    type: [UserResponseDto] 
+  @ApiResponse({
+    status: 200,
+    description: 'Список пользователей успешно получен',
+    type: [UserResponseDto]
   })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
   @ApiResponse({ status: 403, description: 'Доступ запрещен' })
@@ -87,10 +87,10 @@ export class UsersController {
   @Get(':id')
   @ApiOperation({ summary: 'Получить пользователя по ID' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Пользователь найден', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь найден',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -104,10 +104,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Обновить профиль пользователя' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
   @ApiBody({ type: UpdateUserProfileDto })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Профиль пользователя успешно обновлен', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Профиль пользователя успешно обновлен',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
@@ -125,10 +125,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Изменить роль пользователя' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
   @ApiBody({ type: ChangeUserRoleDto })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Роль пользователя успешно изменена', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Роль пользователя успешно изменена',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 400, description: 'Некорректные данные запроса' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
@@ -145,10 +145,10 @@ export class UsersController {
   @Put(':id/activate')
   @ApiOperation({ summary: 'Активировать пользователя' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Пользователь успешно активирован', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь успешно активирован',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -161,10 +161,10 @@ export class UsersController {
   @Put(':id/deactivate')
   @ApiOperation({ summary: 'Деактивировать пользователя' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Пользователь успешно деактивирован', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь успешно деактивирован',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -178,10 +178,10 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Мягкое удаление пользователя' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Пользователь успешно удален', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь успешно удален',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })
@@ -194,10 +194,10 @@ export class UsersController {
   @Put(':id/restore')
   @ApiOperation({ summary: 'Восстановить пользователя' })
   @ApiParam({ name: 'id', description: 'ID пользователя', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Пользователь успешно восстановлен', 
-    type: UserResponseDto 
+  @ApiResponse({
+    status: 200,
+    description: 'Пользователь успешно восстановлен',
+    type: UserResponseDto
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   @ApiResponse({ status: 401, description: 'Неавторизован' })

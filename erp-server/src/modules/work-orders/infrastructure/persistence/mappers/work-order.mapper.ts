@@ -80,7 +80,11 @@ export class WorkOrderMapper {
         entity.startedAt = domain.getStartedAt();
         entity.completedAt = domain.getCompletedAt();
         entity.notes = domain.getNotes();
-        entity.items = domain.getItems().map((item) => WorkOrderMapper.toPersistenceItem(item));
+        entity.items = domain.getItems().map((item) => {
+            const itemEntity = WorkOrderMapper.toPersistenceItem(item);
+            itemEntity.workOrder = entity; // Установка обратной связи для TypeORM
+            return itemEntity;
+        });
         entity.createdAt = domain.getCreatedAt();
         entity.updatedAt = domain.getUpdatedAt();
         return entity;
@@ -91,7 +95,9 @@ export class WorkOrderMapper {
         if (domain.getId()) {
             entity.id = domain.getId() as number;
         }
-        entity.workOrderId = domain.getWorkOrderId();
+        if (domain.getWorkOrderId() !== 0) {
+            entity.workOrderId = domain.getWorkOrderId();
+        }
         entity.orderItemId = domain.getOrderItemId();
         entity.productId = domain.getProductId();
         entity.productName = domain.getProductName();

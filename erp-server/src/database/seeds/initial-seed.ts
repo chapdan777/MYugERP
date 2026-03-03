@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../../modules/users/infrastructure/persistence/user.entity';
 import { seedWorkOrderStatuses } from './work-order-statuses-seed';
 import { seedRequestedProperties } from './requested-properties-seed';
+import { seedBomSchemas } from './bom-schemas-seed';
 
 /**
  * Начальная инициализация базы данных
@@ -16,6 +17,9 @@ export async function runInitialSeed(dataSource: DataSource): Promise<void> {
 
   // Запускаем seed для запрошенных пользователем свойств
   await seedRequestedProperties(dataSource);
+
+  // Запускаем seed для схем компонентов (BOM)
+  await seedBomSchemas(dataSource);
 
   // Проверяем, существует ли уже администратор
   const existingAdmin = await userRepository.findOne({
