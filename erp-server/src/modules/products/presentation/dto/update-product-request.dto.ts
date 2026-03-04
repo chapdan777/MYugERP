@@ -12,6 +12,11 @@ export class UpdateProductRequestDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(100)
+  code?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @IsNumber()

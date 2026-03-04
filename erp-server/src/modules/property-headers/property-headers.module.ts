@@ -20,6 +20,7 @@ import {
   RemoveProductFromHeaderUseCase,
   GetHeaderProductsUseCase,
 } from './application/use-cases';
+import { PropertyHeaderProductListener } from './application/listeners/product-deactivated.listener';
 
 // Repositories
 import {
@@ -80,6 +81,9 @@ import {
     AddProductToHeaderUseCase,
     RemoveProductFromHeaderUseCase,
     GetHeaderProductsUseCase,
+
+    // Listeners
+    PropertyHeaderProductListener,
 
     // Repositories
     {

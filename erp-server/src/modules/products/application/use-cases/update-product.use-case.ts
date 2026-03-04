@@ -7,6 +7,7 @@ import { UnitOfMeasure } from '../../domain/value-objects/unit-of-measure.vo';
 
 export class UpdateProductDto {
   name?: string;
+  code?: string;
   description?: string;
   basePrice?: number;
   unit?: string;
@@ -36,12 +37,22 @@ export class UpdateProductUseCase {
     // Создание value object для единицы измерения если она обновляется
     const unit = dto.unit ? UnitOfMeasure.create(dto.unit) : undefined;
 
+    // Проверка уникальности кода если он меняется
+    if (dto.code && dto.code !== product.getCode()) {
+      const exists = await this.productRepository.existsByCode(dto.code);
+      if (exists) {
+        const { BadRequestException } = require('@nestjs/common');
+        throw new BadRequestException(`Продукт с артикулом "${dto.code}" уже существует`);
+      }
+    }
+
     console.log('📦 UpdateProductUseCase executing for ID:', id);
     console.log('📝 DTO received:', JSON.stringify(dto, null, 2));
 
     // Обновление через доменный метод
     product.updateInfo({
       name: dto.name,
+      code: dto.code,
       description: dto.description,
       basePrice: dto.basePrice,
       unit,

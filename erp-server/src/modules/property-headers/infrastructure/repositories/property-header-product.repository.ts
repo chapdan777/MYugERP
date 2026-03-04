@@ -23,9 +23,26 @@ export class PropertyHeaderProductRepository implements IPropertyHeaderProductRe
         await this.repository.delete({ headerId, productId });
     }
 
+    async deleteByProductId(productId: number): Promise<void> {
+        await this.repository.delete({ productId });
+    }
+
     async findByHeaderId(headerId: number): Promise<PropertyHeaderProduct[]> {
         const entities = await this.repository.find({
-            where: { headerId },
+            where: {
+                headerId,
+                product: {
+                    isActive: true
+                }
+            },
+            relations: ['product']
+        });
+        return entities.map(PropertyHeaderProductMapper.toDomain);
+    }
+
+    async findByProductId(productId: number): Promise<PropertyHeaderProduct[]> {
+        const entities = await this.repository.find({
+            where: { productId },
             relations: ['product']
         });
         return entities.map(PropertyHeaderProductMapper.toDomain);

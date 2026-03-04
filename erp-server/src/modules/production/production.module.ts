@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ComponentGenerationService } from './domain/services/component-generation.service';
 import { OrderItemComponentEntity } from './infrastructure/persistence/order-item-component.entity';
@@ -26,6 +26,7 @@ import { ProductComponentSchemaRepository } from './infrastructure/repositories/
 import { CreateProductComponentSchemaUseCase } from './application/use-cases/create-product-component-schema.use-case';
 import { GetProductComponentSchemasUseCase } from './application/use-cases/get-product-component-schemas.use-case';
 import { DeleteProductComponentSchemaUseCase } from './application/use-cases/delete-product-component-schema.use-case';
+import { UpdateProductComponentSchemaUseCase } from './application/use-cases/update-product-component-schema.use-case';
 import { ProductComponentSchemaController } from './presentation/controllers/product-component-schema.controller';
 import { RouteStepMaterialEntity } from './infrastructure/persistence/entities/route-step-material.entity';
 import { CreateTechnologicalRouteUseCase } from './application/use-cases/create-technological-route.use-case';
@@ -42,9 +43,12 @@ import { UpdateProductionDepartmentUseCase } from './application/use-cases/updat
 import { DepartmentOperationRepository } from './infrastructure/repositories/department-operation.repository';
 import { ProductionDepartmentController } from './presentation/controllers/production-department.controller';
 import { DEPARTMENT_OPERATION_REPOSITORY } from './domain/repositories/department-operation.repository.interface';
+import { GetNestedProductPropertiesUseCase } from './application/use-cases/get-nested-product-properties.use-case';
+import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
+    forwardRef(() => ProductsModule),
     TypeOrmModule.forFeature([
       OrderItemComponentEntity,
       OperationMaterialEntity,
@@ -71,6 +75,8 @@ import { DEPARTMENT_OPERATION_REPOSITORY } from './domain/repositories/departmen
     CreateProductComponentSchemaUseCase,
     GetProductComponentSchemasUseCase,
     DeleteProductComponentSchemaUseCase,
+    UpdateProductComponentSchemaUseCase,
+    GetNestedProductPropertiesUseCase,
     CreateTechnologicalRouteUseCase,
     GetTechnologicalRouteUseCase,
     CreateOperationUseCase,

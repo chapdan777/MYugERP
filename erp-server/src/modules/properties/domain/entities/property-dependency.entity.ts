@@ -129,6 +129,28 @@ export class PropertyDependency {
     this.updatedAt = new Date();
   }
 
+  /**
+   * Обновление зависимости
+   */
+  update(props: {
+    sourcePropertyId?: number;
+    targetPropertyId?: number;
+    dependencyType?: DependencyType;
+    sourceValue?: string | null;
+    targetValue?: string | null;
+    isActive?: boolean;
+  }): void {
+    if (props.sourcePropertyId !== undefined) this.sourcePropertyId = props.sourcePropertyId;
+    if (props.targetPropertyId !== undefined) this.targetPropertyId = props.targetPropertyId;
+    if (props.dependencyType !== undefined) this.dependencyType = props.dependencyType;
+    if (props.sourceValue !== undefined) this.sourceValue = props.sourceValue;
+    if (props.targetValue !== undefined) this.targetValue = props.targetValue;
+    if (props.isActive !== undefined) this.isActive = props.isActive;
+
+    this.updatedAt = new Date();
+    this.validate();
+  }
+
   // Getters
   getId(): number | undefined {
     return this.id;

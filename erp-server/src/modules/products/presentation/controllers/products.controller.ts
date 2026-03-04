@@ -20,6 +20,7 @@ import {
   UpdateProductUseCase,
   ActivateProductUseCase,
   DeactivateProductUseCase,
+  CloneProductUseCase,
 } from '../../application/use-cases';
 import { SetProductPropertiesUseCase } from '../../application/use-cases/set-product-properties.use-case';
 import { GetProductPropertiesUseCase } from '../../application/use-cases/get-product-properties.use-case';
@@ -39,6 +40,7 @@ export class ProductsController {
     private readonly updateProductUseCase: UpdateProductUseCase,
     private readonly activateProductUseCase: ActivateProductUseCase,
     private readonly deactivateProductUseCase: DeactivateProductUseCase,
+    private readonly cloneProductUseCase: CloneProductUseCase,
     private readonly setProductPropertiesUseCase: SetProductPropertiesUseCase,
     private readonly getProductPropertiesUseCase: GetProductPropertiesUseCase,
   ) { }
@@ -140,6 +142,7 @@ export class ProductsController {
   ): Promise<ProductResponseDto> {
     const product = await this.updateProductUseCase.execute(id, {
       name: dto.name,
+      code: dto.code,
       description: dto.description,
       basePrice: dto.basePrice,
       unit: dto.unit,
@@ -148,6 +151,25 @@ export class ProductsController {
       defaultWidth: dto.defaultWidth,
       defaultDepth: dto.defaultDepth,
     });
+    return ProductResponseDto.fromDomain(product);
+  }
+
+  /**
+   * Клонирование продукта
+   */
+  @Post(':id/clone')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Клонировать продукт со всеми свойствами, BOM и маршрутами' })
+  @ApiParam({ name: 'id', description: 'ID исходного продукта', type: Number })
+  @ApiResponse({
+    status: 201,
+    description: 'Продукт успешно клонирован',
+    type: ProductResponseDto
+  })
+  @ApiResponse({ status: 404, description: 'Исходный продукт не найден' })
+  @ApiResponse({ status: 401, description: 'Неавторизован' })
+  async clone(@Param('id', ParseIntPipe) id: number): Promise<ProductResponseDto> {
+    const product = await this.cloneProductUseCase.execute(id);
     return ProductResponseDto.fromDomain(product);
   }
 

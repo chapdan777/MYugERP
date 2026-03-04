@@ -30,3 +30,29 @@ export class PropertyDependencyResponseDto {
   isActive!: boolean;
   createdAt!: Date;
 }
+
+export class UpdatePropertyDependencyRequestDto {
+  @IsOptional()
+  @IsNumber()
+  sourcePropertyId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  targetPropertyId?: number;
+
+  @IsOptional()
+  @IsEnum(DependencyType)
+  dependencyType?: DependencyType;
+
+  @IsOptional()
+  @IsString()
+  sourceValue?: string | null;
+
+  @IsOptional()
+  @IsString()
+  targetValue?: string | null;
+
+  @IsOptional()
+  isActive?: boolean;
+}
+

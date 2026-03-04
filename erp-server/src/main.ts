@@ -24,7 +24,21 @@ async function bootstrap(): Promise<void> {
       exceptionFactory: (errors) => {
         console.error('Validation Errors:', JSON.stringify(errors, null, 2));
         const { BadRequestException } = require('@nestjs/common');
-        return new BadRequestException(errors);
+
+        // Преобразуем сложные объекты ошибок в плоский массив строк (сообщений)
+        const formatErrors = (errs: any[]): string[] => {
+          return errs.reduce((acc, err) => {
+            if (err.constraints) {
+              acc.push(...Object.values(err.constraints as Record<string, string>));
+            }
+            if (err.children && err.children.length > 0) {
+              acc.push(...formatErrors(err.children));
+            }
+            return acc;
+          }, []);
+        };
+
+        return new BadRequestException(formatErrors(errors));
       }
     }),
   );

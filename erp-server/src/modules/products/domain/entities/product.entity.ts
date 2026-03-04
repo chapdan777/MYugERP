@@ -113,6 +113,7 @@ export class Product {
    */
   updateInfo(props: {
     name?: string;
+    code?: string;
     description?: string | null;
     basePrice?: number;
     unit?: UnitOfMeasure;
@@ -123,6 +124,10 @@ export class Product {
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
+    }
+
+    if (props.code !== undefined) {
+      this.code = props.code;
     }
 
     if (props.description !== undefined) {

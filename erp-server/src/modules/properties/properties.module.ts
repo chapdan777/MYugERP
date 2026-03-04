@@ -17,6 +17,7 @@ import { GetPropertyValuesByPropertyIdUseCase } from './application/use-cases/ge
 import { DeletePropertyDependencyUseCase } from './application/use-cases/delete-property-dependency.use-case';
 import { CreatePropertyDependencyUseCase } from './application/use-cases/create-property-dependency.use-case';
 import { GetDependenciesForPropertyUseCase } from './application/use-cases/get-dependencies-for-property.use-case';
+import { UpdatePropertyDependencyUseCase } from './application/use-cases/update-property-dependency.use-case';
 import { UpdatePropertyValueUseCase } from './application/use-cases/update-property-value.use-case';
 import { DeletePropertyValueUseCase } from './application/use-cases/delete-property-value.use-case';
 
@@ -54,6 +55,7 @@ import { PricingModule } from '../pricing/pricing.module';
     DeletePropertyDependencyUseCase,
     CreatePropertyDependencyUseCase,
     GetDependenciesForPropertyUseCase,
+    UpdatePropertyDependencyUseCase,
     UpdatePropertyValueUseCase,
     DeletePropertyValueUseCase,
 
