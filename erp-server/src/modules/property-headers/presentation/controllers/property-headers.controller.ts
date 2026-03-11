@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreatePropertyHeaderUseCase } from '../../application/use-cases/create-property-header.use-case';
 import { GetPropertyHeaderByIdUseCase } from '../../application/use-cases/get-property-header-by-id.use-case';
@@ -159,8 +159,9 @@ export class PropertyHeadersController {
   @ApiResponse({ status: 404, description: 'Шапка не найдена' })
   async getProducts(
     @Param('id', ParseIntPipe) id: number,
+    @Query('includeInactive') includeInactive?: boolean,
   ) {
-    const items = await this.getHeaderProductsUseCase.execute(id);
+    const items = await this.getHeaderProductsUseCase.execute(id, includeInactive);
     // Return the relationship entities so frontend gets headerId and productId
     // serialization will handle getting the necessary fields
     return items.map(item => {

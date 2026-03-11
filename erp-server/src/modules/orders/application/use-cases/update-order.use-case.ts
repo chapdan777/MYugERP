@@ -33,6 +33,10 @@ export class UpdateOrderUseCase {
             clientId: dto.clientId,
             clientName: dto.clientName || 'Без названия',
             deadline: dto.deadline ?? null,
+            documentType: dto.documentType,
+            manager: dto.manager,
+            orderName: dto.orderName,
+            launchDate: dto.launchDate,
             notes: dto.notes ?? null,
         });
 
@@ -68,7 +72,8 @@ export class UpdateOrderUseCase {
                         sectionProps.forEach(p => mergedPropsMap.set(p.propertyId, p));
                         itemProps.forEach(p => mergedPropsMap.set(p.propertyId, p));
 
-                        const finalProperties = Array.from(mergedPropsMap.values());
+                        const finalProperties = Array.from(mergedPropsMap.values())
+                            .filter(p => p.value !== undefined && p.value !== null && String(p.value).trim() !== '');
 
                         // Calculate price for the item
                         const priceResult = await this.calculatePriceUseCase.execute({
@@ -101,6 +106,7 @@ export class UpdateOrderUseCase {
                             coefficient: 1,
                             basePrice: priceResult.basePrice,
                             notes: null,
+                            nestedProperties: itemDto.nestedProperties,
                         });
 
                         // Update item with calculated prices

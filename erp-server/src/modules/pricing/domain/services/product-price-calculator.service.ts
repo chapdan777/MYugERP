@@ -7,6 +7,9 @@ import { PRODUCT_REPOSITORY, PRODUCT_PROPERTY_REPOSITORY } from '../../../produc
 import { IProductRepository } from '../../../products/domain/repositories/product.repository.interface';
 import { IProductPropertyRepository } from '../../../products/domain/repositories/product-property.repository.interface';
 import { ProductProperty as DbProductProperty } from '../../../products/domain/entities/product-property.entity';
+import { ComponentGenerationService } from '../../../production/domain/services/component-generation.service';
+import { PRODUCT_COMPONENT_SCHEMA_REPOSITORY } from '../../../production/domain/repositories/product-component-schema.repository.interface';
+import type { IProductComponentSchemaRepository } from '../../../production/domain/repositories/product-component-schema.repository.interface';
 
 // Интерфейсы для внешних сервисов (будут реализованы при интеграции)
 export interface Product {
@@ -53,6 +56,7 @@ export interface PriceCalculationResult {
   modifiersApplied: AppliedModifier[];
   subtotal: number;
   finalPrice: number;
+  components?: any[]; // Рассчитанные детали (BOM)
 }
 
 interface AppliedModifier {
@@ -75,6 +79,9 @@ export class ProductPriceCalculatorService {
     private readonly productRepository: IProductRepository,
     @Inject(PRODUCT_PROPERTY_REPOSITORY)
     private readonly productPropertyRepository: IProductPropertyRepository,
+    @Inject(PRODUCT_COMPONENT_SCHEMA_REPOSITORY)
+    private readonly schemaRepository: IProductComponentSchemaRepository,
+    private readonly componentGenerationService: ComponentGenerationService,
   ) { }
 
   /**
@@ -157,6 +164,50 @@ export class ProductPriceCalculatorService {
     // 12. Применить количество
     const finalPrice = priceWithCoefficient * context.quantity;
 
+    // 13. Рассчитать состав изделия (BOM)
+    let components: any[] = [];
+    try {
+      const schemas = await this.schemaRepository.findByProductId(context.productId);
+      if (schemas && schemas.length > 0) {
+        const propMap: Record<string, any> = {};
+        activeProperties.forEach(p => {
+          propMap[p.propertyId] = p.currentValue || p.defaultValue;
+        });
+
+        const detailedComponents = this.componentGenerationService.generateComponentsDetailed(
+          {
+            id: context.productId,
+            width: dimensions.width,
+            height: dimensions.length, // В BOM H = длина, W = ширина
+            depth: dimensions.depth,
+            properties: propMap,
+          },
+          schemas.map(s => ({
+            name: s.getName(),
+            lengthFormula: s.getLengthFormula(),
+            widthFormula: s.getWidthFormula(),
+            quantityFormula: s.getQuantityFormula(),
+            childProductId: s.getChildProductId(),
+            depthFormula: s.getDepthFormula(),
+            extraVariables: s.getExtraVariables(),
+            conditionFormula: s.getConditionFormula(),
+            sortOrder: s.getSortOrder(),
+          }))
+        );
+
+        components = detailedComponents.map(dc => ({
+          name: dc.orderItemComponent.getName(),
+          length: dc.calculatedLength,
+          width: dc.calculatedWidth,
+          depth: dc.calculatedDepth,
+          quantity: dc.calculatedQuantity,
+          productId: dc.childProductId,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to calculate BOM components for price result:', error);
+    }
+
     return {
       basePrice,                           // Базовая цена номенклатуры (1500)
       unitPrice,                           // Цена за 1 м²/п.м./шт после модификаторов (3900)
@@ -164,10 +215,11 @@ export class ProductPriceCalculatorService {
       quantity: context.quantity,
       unitType: product.unit,
       dimensions,
-      coefficient,
+      coefficient: coefficient,
       modifiersApplied: appliedModifiers,
       subtotal: modifiedUnitPrice,         // Промежуточный итог (цена с размерами)
       finalPrice,                          // Итоговая стоимость (74880)
+      components,                          // Рассчитанный состав
     };
   }
 

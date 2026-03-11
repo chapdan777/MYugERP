@@ -219,7 +219,7 @@ export class PropertyHeaderService {
   /**
    * Получение продуктов шапки
    */
-  async getHeaderProducts(headerId: number): Promise<PropertyHeaderProduct[]> {
-    return await this.propertyHeaderProductRepository.findByHeaderId(headerId);
+  async getHeaderProducts(headerId: number, includeInactive?: boolean): Promise<PropertyHeaderProduct[]> {
+    return await this.propertyHeaderProductRepository.findByHeaderId(headerId, includeInactive);
   }
 }

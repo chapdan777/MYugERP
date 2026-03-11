@@ -23,6 +23,7 @@ export interface AddItemToSectionDto {
   basePrice: number;
   notes?: string;
   properties?: PropertyValueDto[];
+  nestedProperties?: Record<number, PropertyValueDto[]>;
 }
 
 /**
@@ -33,7 +34,7 @@ export class AddItemToSectionUseCase {
   constructor(
     @Inject(ORDER_REPOSITORY)
     private readonly orderRepository: IOrderRepository,
-  ) {}
+  ) { }
 
   async execute(dto: AddItemToSectionDto): Promise<Order> {
     // 1. Fetch the order
@@ -63,6 +64,7 @@ export class AddItemToSectionUseCase {
       coefficient: dto.coefficient,
       basePrice: dto.basePrice,
       notes: dto.notes ?? null,
+      nestedProperties: dto.nestedProperties,
     });
 
     // 5. Add properties to item if provided

@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ITechnologicalRouteRepository, TECHNOLOGICAL_ROUTE_REPOSITORY } from '../../domain/repositories/technological-route.repository.interface';
 import { TechnologicalRoute } from '../../domain/entities/technological-route.entity';
 
@@ -9,11 +9,8 @@ export class GetTechnologicalRouteUseCase {
         private readonly repository: ITechnologicalRouteRepository,
     ) { }
 
-    async execute(productId: number): Promise<TechnologicalRoute> {
+    async execute(productId: number): Promise<TechnologicalRoute | null> {
         const route = await this.repository.findActiveByProductId(productId);
-        if (!route) {
-            throw new NotFoundException(`Active technological route for product ${productId} not found`);
-        }
-        return route;
+        return route ?? null;
     }
 }

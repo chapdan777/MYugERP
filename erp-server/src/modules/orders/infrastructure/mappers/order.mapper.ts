@@ -7,8 +7,68 @@ import { OrderItemEntity } from '../persistence/order-item.entity';
 
 import { PropertyInOrder } from '../../domain/entities/property-in-order.entity';
 import { PropertyInOrderEntity } from '../persistence/property-in-order.entity';
+import { OrderResponseDto, OrderSectionResponseDto, OrderItemResponseDto, PropertyInOrderResponseDto } from '../../presentation/dtos/order.dto';
 
 export class OrderMapper {
+  static toResponseDto(domain: Order): OrderResponseDto {
+    const dto = new OrderResponseDto();
+    dto.id = domain.getId()!;
+    dto.orderNumber = domain.getOrderNumber();
+    dto.clientId = domain.getClientId();
+    dto.clientName = domain.getClientName();
+    dto.status = domain.getStatus();
+    dto.paymentStatus = domain.getPaymentStatus();
+    dto.deadline = domain.getDeadline();
+    dto.documentType = domain.getDocumentType();
+    dto.manager = domain.getManager();
+    dto.orderName = domain.getOrderName();
+    dto.launchDate = domain.getLaunchDate();
+    dto.lockedBy = domain.getLockedBy();
+    dto.lockedAt = domain.getLockedAt();
+    dto.totalAmount = domain.getTotalAmount();
+    dto.notes = domain.getNotes();
+    dto.createdAt = domain.getCreatedAt();
+    dto.updatedAt = domain.getUpdatedAt();
+
+    dto.sections = domain.getSections().map(section => {
+      const sectionDto = new OrderSectionResponseDto();
+      sectionDto.id = section.getId()!;
+      sectionDto.sectionNumber = section.getSectionNumber();
+      sectionDto.name = section.getName();
+      sectionDto.headerId = section.getHeaderId();
+      sectionDto.description = section.getDescription();
+      sectionDto.totalAmount = section.getTotalAmount();
+      sectionDto.items = section.getItems().map(item => {
+        const itemDto = new OrderItemResponseDto();
+        itemDto.id = item.getId()!;
+        itemDto.productId = item.getProductId();
+        itemDto.productName = item.getProductName();
+        itemDto.length = item.getLength();
+        itemDto.width = item.getWidth();
+        itemDto.depth = item.getDepth();
+        itemDto.quantity = item.getQuantity();
+        itemDto.unit = item.getUnit();
+        itemDto.coefficient = item.getCoefficient();
+        itemDto.basePrice = item.getBasePrice();
+        itemDto.finalPrice = item.getFinalPrice();
+        itemDto.totalPrice = item.getTotalPrice();
+        itemDto.notes = item.getNotes();
+        itemDto.properties = item.getProperties().map(prop => {
+          const propDto = new PropertyInOrderResponseDto();
+          propDto.propertyId = prop.getPropertyId();
+          propDto.propertyCode = prop.getPropertyCode();
+          propDto.propertyName = prop.getPropertyName();
+          propDto.value = prop.getValue();
+          return propDto;
+        });
+        return itemDto;
+      });
+      return sectionDto;
+    });
+
+    return dto;
+  }
+
   static toDomain(entity: OrderEntity): Order {
     return Order.restore({
       id: entity.id,
@@ -52,12 +112,17 @@ export class OrderMapper {
             createdAt: prop.createdAt,
           })) || [],
           notes: item.notes || null,
+          nestedProperties: item.nestedProperties || undefined,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         })) || [],
         createdAt: section.createdAt,
         updatedAt: section.updatedAt,
       })),
+      documentType: entity.documentType || null,
+      manager: entity.manager || null,
+      orderName: entity.orderName || null,
+      launchDate: entity.launchDate || null,
       notes: entity.notes || null,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -73,6 +138,10 @@ export class OrderMapper {
     entity.status = domain.getStatus();
     entity.paymentStatus = domain.getPaymentStatus();
     entity.deadline = domain.getDeadline();
+    entity.documentType = domain.getDocumentType() || undefined;
+    entity.manager = domain.getManager() || undefined;
+    entity.orderName = domain.getOrderName() || undefined;
+    entity.launchDate = domain.getLaunchDate() || undefined;
     entity.lockedBy = domain.getLockedBy() || undefined;
     entity.lockedAt = domain.getLockedAt() || undefined;
     entity.totalAmount = domain.getTotalAmount();
@@ -107,6 +176,7 @@ export class OrderMapper {
           return propEntity;
         });
         itemEntity.notes = item.getNotes() || undefined;
+        itemEntity.nestedProperties = item.getNestedProperties() || undefined;
         return itemEntity;
       });
       return sectionEntity;

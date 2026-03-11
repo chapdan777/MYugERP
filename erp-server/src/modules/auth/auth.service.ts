@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { RefreshTokenPayload } from './strategies/jwt-refresh.strategy';
-import { GetUserByUsernameUseCase } from '../users/application/use-cases/get-user.use-case';
+import { GetUserByUsernameUseCase, GetUserByIdUseCase } from '../users/application/use-cases/get-user.use-case';
 import { User } from '../users/domain/entities/user.entity';
 
 /**
@@ -25,6 +25,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly getUserByUsernameUseCase: GetUserByUsernameUseCase,
+    private readonly getUserByIdUseCase: GetUserByIdUseCase,
   ) { }
 
   /**
@@ -105,9 +106,18 @@ export class AuthService {
   /**
    * Обновление access токена через refresh token
    */
-  async refreshAccessToken(userId: number, username: string, role: string): Promise<string> {
-    // Note: In a production environment, we should check if the refresh token is revoked
-    return this.generateAccessToken(userId, username, role);
+  async refreshAccessToken(userId: number, username: string): Promise<string> {
+    const user = await this.getUserByIdUseCase.execute(userId);
+
+    if (!user || user.getUsername() !== username) {
+      throw new UnauthorizedException('Невалидный токен');
+    }
+
+    if (!user.canLogin()) {
+      throw new UnauthorizedException('Учетная запись деактивирована');
+    }
+
+    return this.generateAccessToken(userId, user.getUsername(), user.getRole());
   }
 
   /**

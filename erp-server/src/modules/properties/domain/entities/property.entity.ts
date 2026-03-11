@@ -127,6 +127,7 @@ export class Property {
   updateInfo(props: {
     name?: string;
     code?: string;
+    dataType?: PropertyDataType;
     possibleValues?: string[] | null;
     defaultValue?: string | null;
     isRequired?: boolean;
@@ -135,6 +136,10 @@ export class Property {
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
+    }
+
+    if (props.dataType !== undefined) {
+      this.dataType = props.dataType;
     }
 
     if (props.code !== undefined) {

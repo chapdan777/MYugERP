@@ -19,6 +19,10 @@ export class Order {
   private lockedAt: Date | null;
   private totalAmount: number;
   private sections: OrderSection[];
+  private documentType: string | null;
+  private manager: string | null;
+  private orderName: string | null;
+  private launchDate: Date | null;
   private notes: string | null;
   private createdAt: Date;
   private updatedAt: Date;
@@ -35,6 +39,10 @@ export class Order {
     lockedAt: Date | null;
     totalAmount: number;
     sections: OrderSection[];
+    documentType?: string | null;
+    manager?: string | null;
+    orderName?: string | null;
+    launchDate?: Date | null;
     notes: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -50,6 +58,10 @@ export class Order {
     this.lockedAt = props.lockedAt;
     this.totalAmount = props.totalAmount;
     this.sections = props.sections;
+    this.documentType = props.documentType ?? null;
+    this.manager = props.manager ?? null;
+    this.orderName = props.orderName ?? null;
+    this.launchDate = props.launchDate ?? null;
     this.notes = props.notes;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -63,6 +75,10 @@ export class Order {
     clientId: number;
     clientName: string;
     deadline?: Date | null;
+    documentType?: string | null;
+    manager?: string | null;
+    orderName?: string | null;
+    launchDate?: Date | null;
     notes?: string | null;
   }): Order {
     if (!props.orderNumber || props.orderNumber.trim().length === 0) {
@@ -87,6 +103,10 @@ export class Order {
       lockedAt: null,
       totalAmount: 0,
       sections: [],
+      documentType: props.documentType,
+      manager: props.manager,
+      orderName: props.orderName,
+      launchDate: props.launchDate,
       notes: props.notes?.trim() || null,
       createdAt: now,
       updatedAt: now,
@@ -108,6 +128,10 @@ export class Order {
     lockedAt: Date | null;
     totalAmount: number;
     sections: OrderSection[];
+    documentType: string | null;
+    manager: string | null;
+    orderName: string | null;
+    launchDate: Date | null;
     notes: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -260,6 +284,10 @@ export class Order {
   updateInfo(props: {
     clientName?: string;
     deadline?: Date | null;
+    documentType?: string | null;
+    manager?: string | null;
+    orderName?: string | null;
+    launchDate?: Date | null;
     notes?: string | null;
   }): void {
     if (!this.canBeModified()) {
@@ -277,6 +305,22 @@ export class Order {
 
     if (props.deadline !== undefined) {
       this.deadline = props.deadline;
+    }
+
+    if (props.documentType !== undefined) {
+      this.documentType = props.documentType;
+    }
+
+    if (props.manager !== undefined) {
+      this.manager = props.manager;
+    }
+
+    if (props.orderName !== undefined) {
+      this.orderName = props.orderName;
+    }
+
+    if (props.launchDate !== undefined) {
+      this.launchDate = props.launchDate;
     }
 
     if (props.notes !== undefined) {
@@ -353,6 +397,22 @@ export class Order {
 
   getTotalAmount(): number {
     return this.totalAmount;
+  }
+
+  getLaunchDate(): Date | null {
+    return this.launchDate;
+  }
+
+  getDocumentType(): string | null {
+    return this.documentType;
+  }
+
+  getManager(): string | null {
+    return this.manager;
+  }
+
+  getOrderName(): string | null {
+    return this.orderName;
   }
 
   getSections(): OrderSection[] {

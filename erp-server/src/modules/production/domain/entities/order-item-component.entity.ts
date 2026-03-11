@@ -97,6 +97,16 @@ export class OrderItemComponent {
         return this.quantity;
     }
 
+    setQuantity(qty: number): void {
+        this.quantity = qty;
+        this.validate();
+    }
+
+    setName(name: string): void {
+        this.name = name;
+        this.validate();
+    }
+
     getFormulaContext(): Record<string, any> {
         try {
             return JSON.parse(this.formulaContext);

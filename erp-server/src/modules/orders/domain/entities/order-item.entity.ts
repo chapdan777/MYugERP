@@ -20,6 +20,7 @@ export class OrderItem {
   private totalPrice: number;
   private properties: PropertyInOrder[];
   private notes: string | null;
+  private nestedProperties?: Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>>;
   private createdAt: Date;
   private updatedAt: Date;
 
@@ -39,6 +40,7 @@ export class OrderItem {
     totalPrice?: number;
     properties?: PropertyInOrder[];
     notes?: string | null;
+    nestedProperties?: Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>>;
     createdAt?: Date;
     updatedAt?: Date;
   }) {
@@ -57,6 +59,7 @@ export class OrderItem {
     this.totalPrice = props.totalPrice ?? this.finalPrice * props.quantity;
     this.properties = props.properties ?? [];
     this.notes = props.notes ?? null;
+    this.nestedProperties = props.nestedProperties;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
 
@@ -75,6 +78,7 @@ export class OrderItem {
     coefficient?: number;
     basePrice: number;
     notes?: string | null;
+    nestedProperties?: Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>>;
   }): OrderItem {
     return new OrderItem(props);
   }
@@ -95,6 +99,7 @@ export class OrderItem {
     totalPrice: number;
     properties: PropertyInOrder[];
     notes: string | null;
+    nestedProperties?: Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>>;
     createdAt: Date;
     updatedAt: Date;
   }): OrderItem {
@@ -151,6 +156,11 @@ export class OrderItem {
 
   updateNotes(notes: string | null): void {
     this.notes = notes;
+    this.updatedAt = new Date();
+  }
+
+  updateNestedProperties(nestedConfigs?: Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>>): void {
+    this.nestedProperties = nestedConfigs;
     this.updatedAt = new Date();
   }
 
@@ -213,6 +223,10 @@ export class OrderItem {
 
   getNotes(): string | null {
     return this.notes;
+  }
+
+  getNestedProperties(): Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>> | undefined {
+    return this.nestedProperties;
   }
 
   getCreatedAt(): Date {

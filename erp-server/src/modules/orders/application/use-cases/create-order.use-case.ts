@@ -12,6 +12,10 @@ export interface CreateOrderDto {
   clientId: number;
   clientName?: string;
   deadline?: Date;
+  documentType?: string;
+  manager?: string;
+  orderName?: string;
+  launchDate?: Date;
   notes?: string;
   startDate?: string;
   sections?: {
@@ -19,7 +23,7 @@ export interface CreateOrderDto {
     sectionName?: string;
     name?: string;
     headerId?: number;
-    propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
+    propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string; variableName?: string }[];
     items?: {
       productId: number;
       quantity: number;
@@ -30,7 +34,8 @@ export interface CreateOrderDto {
       basePrice?: number;
       finalPrice?: number;
       note?: string;
-      properties?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
+      properties?: { propertyId: number; propertyName: string; propertyCode: string; value: string; variableName?: string }[];
+      nestedProperties?: Record<number, { propertyId: number; propertyName: string; propertyCode: string; value: string; variableName?: string }[]>;
     }[];
   }[];
 }
@@ -61,6 +66,10 @@ export class CreateOrderUseCase {
       clientId: dto.clientId,
       clientName: dto.clientName || 'Без названия',
       deadline: dto.deadline ?? null,
+      documentType: dto.documentType,
+      manager: dto.manager,
+      orderName: dto.orderName,
+      launchDate: dto.launchDate,
       notes: dto.notes ?? null,
     });
 
@@ -92,7 +101,8 @@ export class CreateOrderUseCase {
             sectionProps.forEach(p => mergedPropsMap.set(p.propertyId, p));
             itemProps.forEach(p => mergedPropsMap.set(p.propertyId, p));
 
-            const finalProperties = Array.from(mergedPropsMap.values());
+            const finalProperties = Array.from(mergedPropsMap.values())
+              .filter(p => p.value !== undefined && p.value !== null && String(p.value).trim() !== '');
 
             // Calculate price for the item
             const priceResult = await this.calculatePriceUseCase.execute({
@@ -125,6 +135,7 @@ export class CreateOrderUseCase {
               coefficient: 1,
               basePrice: priceResult.basePrice,
               notes: null,
+              nestedProperties: itemDto.nestedProperties,
             });
 
             // Update item with calculated prices

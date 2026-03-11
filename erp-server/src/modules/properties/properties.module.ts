@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PropertiesController } from './presentation/controllers/properties.controller';
 import { PropertyValuesController } from './presentation/controllers/property-values.controller';
@@ -38,7 +38,7 @@ import { PricingModule } from '../pricing/pricing.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([PropertyEntity, PropertyValueEntity, PropertyDependencyEntity]),
-    PricingModule,
+    forwardRef(() => PricingModule),
   ],
   controllers: [PropertiesController, PropertyValuesController, PropertyDependenciesController],
   providers: [
@@ -83,6 +83,7 @@ import { PricingModule } from '../pricing/pricing.module';
     UpdatePropertyUseCase,
     ActivatePropertyUseCase,
     DeactivatePropertyUseCase,
+    PROPERTY_REPOSITORY,
   ],
 })
 export class PropertiesModule { }

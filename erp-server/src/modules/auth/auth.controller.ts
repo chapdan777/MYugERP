@@ -113,7 +113,6 @@ export class AuthController {
     const accessToken = await this.authService.refreshAccessToken(
       user.sub,
       user.username,
-      'user', // Fallback role
     );
 
     return { accessToken };

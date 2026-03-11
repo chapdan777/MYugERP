@@ -68,6 +68,7 @@ export class ComponentGenerationService {
     generateComponentsDetailed(
         orderItem: OrderItemData,
         schemas: ComponentSchema[],
+        allSchemasMap?: Map<number, ComponentSchema[]>
     ): GeneratedComponent[] {
         const baseContext = this.buildContext(orderItem);
         const results: GeneratedComponent[] = [];
@@ -132,6 +133,30 @@ export class ComponentGenerationService {
                         calculatedDepth: depth,
                         calculatedQuantity: quantity,
                     });
+
+                    // Рекурсия для вложенных компонентов
+                    if (schema.childProductId && allSchemasMap) {
+                        const childSchemas = allSchemasMap.get(schema.childProductId);
+                        if (childSchemas && childSchemas.length > 0) {
+                            const childItemData = {
+                                ...orderItem,
+                                height: length,
+                                width: width,
+                                depth: depth || 0,
+                                // Свойства наследуются из родительского компонента
+                            };
+
+                            const childResults = this.generateComponentsDetailed(childItemData, childSchemas, allSchemasMap);
+                            for (const cr of childResults) {
+                                // Умножаем количество вложенного компонента на количество текущего
+                                cr.calculatedQuantity *= quantity;
+                                cr.orderItemComponent.setQuantity(cr.calculatedQuantity);
+                                // Добавляем префикс для отображения иерархии (опционально, но помогает понять структуру)
+                                // cr.orderItemComponent.setName(`- ${cr.orderItemComponent.getName()}`);
+                                results.push(cr);
+                            }
+                        }
+                    }
                 }
             } catch (error: any) {
                 this.logger.error(

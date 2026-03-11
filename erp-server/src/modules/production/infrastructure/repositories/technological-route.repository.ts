@@ -22,6 +22,7 @@ export class TechnologicalRouteRepository implements ITechnologicalRouteReposito
     async findById(id: number): Promise<TechnologicalRoute | null> {
         const entity = await this.repository.findOne({
             where: { id },
+            relations: ['steps', 'steps.materials'],
         });
         return entity ? TechnologicalRouteMapper.toDomain(entity) : null;
     }
@@ -36,6 +37,7 @@ export class TechnologicalRouteRepository implements ITechnologicalRouteReposito
     async findActiveByProductId(productId: number): Promise<TechnologicalRoute | null> {
         const entity = await this.repository.findOne({
             where: { productId, isActive: true },
+            relations: ['steps', 'steps.materials'],
         });
         return entity ? TechnologicalRouteMapper.toDomain(entity) : null;
     }

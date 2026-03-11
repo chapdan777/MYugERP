@@ -23,9 +23,9 @@ export class TechnologicalRouteController {
 
     @Get('product/:id')
     @ApiOperation({ summary: 'Получить активный маршрут продукта' })
-    @ApiResponse({ status: 200, description: 'Маршрут найден', type: TechnologicalRouteResponseDto })
-    async getByProduct(@Param('id', ParseIntPipe) id: number): Promise<TechnologicalRouteResponseDto> {
+    @ApiResponse({ status: 200, description: 'Маршрут найден или null', type: TechnologicalRouteResponseDto })
+    async getByProduct(@Param('id', ParseIntPipe) id: number): Promise<TechnologicalRouteResponseDto | null> {
         const route = await this.getUseCase.execute(id);
-        return TechnologicalRouteResponseDto.fromEntity(route);
+        return route ? TechnologicalRouteResponseDto.fromEntity(route) : null;
     }
 }

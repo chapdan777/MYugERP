@@ -2,10 +2,12 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { PROPERTY_REPOSITORY } from '../../domain/repositories/injection-tokens';
 import { IPropertyRepository } from '../../domain/repositories/property.repository.interface';
 import { Property } from '../../domain/entities/property.entity';
+import { PropertyDataType } from '../../domain/enums/property-data-type.enum';
 
 export interface UpdatePropertyDto {
   name?: string;
   code?: string;
+  dataType?: PropertyDataType;
   possibleValues?: string[];
   defaultValue?: string;
   isRequired?: boolean;
@@ -31,6 +33,7 @@ export class UpdatePropertyUseCase {
     property.updateInfo({
       name: dto.name,
       code: dto.code,
+      dataType: dto.dataType,
       possibleValues: dto.possibleValues,
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,

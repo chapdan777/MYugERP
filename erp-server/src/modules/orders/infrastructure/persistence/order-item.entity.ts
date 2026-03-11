@@ -52,6 +52,9 @@ export class OrderItemEntity {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  @Column({ type: 'json', nullable: true })
+  nestedProperties?: Record<number, Array<{ propertyId: number; propertyName: string; propertyCode: string; value: string }>>;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 

@@ -3,6 +3,9 @@
 import { DataSource } from 'typeorm';
 import { runInitialSeed } from './initial-seed';
 import { seedFacadeBomSetup } from './facade-bom-setup.seed';
+import { seedRecoveryData } from './recovery-data.seed';
+import { seedTestOrder } from './create-test-order.seed';
+import { seedCleanupAndFinalize } from './cleanup-and-finalize.seed';
 import * as dotenv from 'dotenv';
 
 // Загружаем переменные окружения
@@ -35,6 +38,12 @@ async function main() {
     await runInitialSeed(dataSource);
     console.log('🌱 Running Facade BOM Setup seed...');
     await seedFacadeBomSetup(dataSource);
+    console.log('🌱 Running Recovery Data seed...');
+    await seedRecoveryData(dataSource);
+    console.log('🌱 Running Test Order seed...');
+    await seedTestOrder(dataSource);
+    console.log('🌱 Running Cleanup and Finalization seed...');
+    await seedCleanupAndFinalize(dataSource);
     console.log('✅ Seed completed successfully');
   } catch (error) {
     console.error('❌ Seed failed:', error);

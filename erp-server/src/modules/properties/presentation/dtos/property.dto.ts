@@ -53,6 +53,11 @@ export class UpdatePropertyRequestDto {
   @IsString()
   code?: string;
 
+  @ApiPropertyOptional({ enum: PropertyDataType, description: 'Тип данных свойства' })
+  @IsOptional()
+  @IsEnum(PropertyDataType)
+  dataType?: PropertyDataType;
+
   @ApiPropertyOptional({ description: 'Возможные значения' })
   @IsOptional()
   @IsArray()

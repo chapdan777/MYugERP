@@ -38,7 +38,10 @@ class CreateOrderItemDto {
 
   @IsOptional()
   @IsArray()
-  properties?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
+  properties?: { propertyId: number; propertyName: string; propertyCode: string; value: string; variableName?: string }[];
+
+  @IsOptional()
+  nestedProperties?: Record<number, { propertyId: number; propertyName: string; propertyCode: string; value: string; variableName?: string }[]>;
 }
 
 class CreateOrderSectionDto {
@@ -60,7 +63,8 @@ class CreateOrderSectionDto {
 
   @IsOptional()
   @IsArray()
-  propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string }[];
+  propertyValues?: { propertyId: number; propertyName: string; propertyCode: string; value: string; variableName?: string }[];
+
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -79,6 +83,22 @@ export class CreateOrderDto {
   @IsOptional()
   @Type(() => Date)
   deadline?: Date;
+
+  @IsString()
+  @IsOptional()
+  documentType?: string;
+
+  @IsString()
+  @IsOptional()
+  manager?: string;
+
+  @IsString()
+  @IsOptional()
+  orderName?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  launchDate?: Date;
 
   @IsString()
   @IsOptional()

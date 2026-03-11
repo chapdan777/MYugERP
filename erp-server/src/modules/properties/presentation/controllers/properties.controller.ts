@@ -93,6 +93,7 @@ export class PropertiesController {
     const property = await this.updatePropertyUseCase.execute(id, {
       name: dto.name,
       code: dto.code,
+      dataType: dto.dataType,
       possibleValues: dto.possibleValues,
       defaultValue: dto.defaultValue,
       isRequired: dto.isRequired,

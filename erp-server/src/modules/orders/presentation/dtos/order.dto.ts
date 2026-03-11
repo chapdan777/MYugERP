@@ -162,6 +162,10 @@ export class OrderResponseDto {
   status!: string;
   paymentStatus!: string;
   deadline!: Date | null;
+  documentType!: string | null;
+  manager!: string | null;
+  orderName!: string | null;
+  launchDate!: Date | null;
   lockedBy!: number | null;
   lockedAt!: Date | null;
   totalAmount!: number;
@@ -178,6 +182,7 @@ export class OrderSectionResponseDto {
   id!: number;
   sectionNumber!: number;
   name!: string;
+  headerId!: number | null;
   description!: string | null;
   totalAmount!: number;
   items!: OrderItemResponseDto[];
@@ -190,6 +195,9 @@ export class OrderItemResponseDto {
   id!: number;
   productId!: number;
   productName!: string;
+  length?: number;
+  width?: number;
+  depth?: number;
   quantity!: number;
   unit!: number;
   coefficient!: number;

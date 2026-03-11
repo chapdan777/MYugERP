@@ -4,6 +4,8 @@ import type { IProductComponentSchemaRepository } from '../../domain/repositorie
 import { PRODUCT_REPOSITORY, PRODUCT_PROPERTY_REPOSITORY } from '../../../products/domain/repositories/injection-tokens';
 import { IProductRepository } from '../../../products/domain/repositories/product.repository.interface';
 import { IProductPropertyRepository } from '../../../products/domain/repositories/product-property.repository.interface';
+import { PROPERTY_REPOSITORY } from '../../../properties/domain/repositories/injection-tokens';
+import { IPropertyRepository } from '../../../properties/domain/repositories/property.repository.interface';
 
 /**
  * Узел дерева вложенных свойств продукта
@@ -19,11 +21,14 @@ export interface NestedProductNode {
     properties: Array<{
         propertyId: number;
         propertyName: string;
+        propertyCode?: string;
         defaultValue: string | null;
         isRequired: boolean;
     }>;
     /** Дочерние компоненты (рекурсия) */
     children: NestedProductNode[];
+    /** Формула условия для отображения компонента из BOM */
+    conditionFormula?: string | null;
 }
 
 /**
@@ -44,6 +49,8 @@ export class GetNestedProductPropertiesUseCase {
         private readonly productRepository: IProductRepository,
         @Inject(PRODUCT_PROPERTY_REPOSITORY)
         private readonly productPropertyRepository: IProductPropertyRepository,
+        @Inject(PROPERTY_REPOSITORY)
+        private readonly propertyRepository: IPropertyRepository,
     ) { }
 
     /**
@@ -52,7 +59,14 @@ export class GetNestedProductPropertiesUseCase {
      * @returns массив дочерних узлов с их свойствами
      */
     async execute(productId: number): Promise<NestedProductNode[]> {
-        return this.buildTree(productId, 0, new Set<number>());
+        // Предзагружаем все свойства, чтобы не делать по запросу на каждое
+        const allPropertiesLookup = new Map<number, { name: string, code: string }>();
+        const allProps = await this.propertyRepository.findAll();
+        for (const prop of allProps) {
+            allPropertiesLookup.set(prop.getId() as number, { name: prop.getName(), code: prop.getCode() });
+        }
+
+        return this.buildTree(productId, 0, new Set<number>(), allPropertiesLookup);
     }
 
     /**
@@ -60,11 +74,13 @@ export class GetNestedProductPropertiesUseCase {
      * @param productId - ID текущего продукта
      * @param depth - текущая глубина рекурсии
      * @param visited - множество уже посещённых ID для защиты от циклов
+     * @param propertiesLookup - предзагруженные данные о свойствах
      */
     private async buildTree(
         productId: number,
         depth: number,
         visited: Set<number>,
+        propertiesLookup: Map<number, { name: string, code: string }>
     ): Promise<NestedProductNode[]> {
         // Защита от бесконечной рекурсии
         if (depth >= GetNestedProductPropertiesUseCase.MAX_DEPTH) {
@@ -99,24 +115,30 @@ export class GetNestedProductPropertiesUseCase {
 
             const properties = productProperties
                 .filter(pp => pp.getIsActive())
-                .map(pp => ({
-                    propertyId: pp.getPropertyId(),
-                    propertyName: `Свойство #${pp.getPropertyId()}`,
-                    defaultValue: pp.getDefaultValue(),
-                    isRequired: pp.getIsRequired(),
-                }));
+                .map(pp => {
+                    const propDef = propertiesLookup.get(pp.getPropertyId());
+                    return {
+                        propertyId: pp.getPropertyId(),
+                        propertyName: propDef?.name || `Свойство #${pp.getPropertyId()}`,
+                        propertyCode: propDef?.code,
+                        defaultValue: pp.getDefaultValue(),
+                        isRequired: pp.getIsRequired(),
+                    };
+                });
 
             // Рекурсивно строим поддерево
             const children = await this.buildTree(
                 childProductId,
                 depth + 1,
                 new Set(visited),
+                propertiesLookup
             );
 
             result.push({
                 productId: childProductId,
                 productName: childProduct.getName(),
                 componentName: schema.getName(),
+                conditionFormula: schema.getConditionFormula() || null,
                 properties,
                 children,
             });

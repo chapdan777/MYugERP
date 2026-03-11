@@ -45,10 +45,12 @@ import { ProductionDepartmentController } from './presentation/controllers/produ
 import { DEPARTMENT_OPERATION_REPOSITORY } from './domain/repositories/department-operation.repository.interface';
 import { GetNestedProductPropertiesUseCase } from './application/use-cases/get-nested-product-properties.use-case';
 import { ProductsModule } from '../products/products.module';
+import { PropertiesModule } from '../properties/properties.module';
 
 @Module({
   imports: [
     forwardRef(() => ProductsModule),
+    forwardRef(() => PropertiesModule),
     TypeOrmModule.forFeature([
       OrderItemComponentEntity,
       OperationMaterialEntity,

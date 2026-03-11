@@ -44,8 +44,7 @@ export async function seedFacadeBomSetup(dataSource: DataSource) {
     // 2. Create or Find Component Products
     const componentProducts = [
         { code: 'COMP-STOE', name: 'Стоевой профиль', type: 'PART', unit: 'шт' },
-        { code: 'COMP-POP-TOP', name: 'Поперечный профиль (Верх)', type: 'PART', unit: 'шт' },
-        { code: 'COMP-POP-BOT', name: 'Поперечный профиль (Низ)', type: 'PART', unit: 'шт' },
+        { code: 'COMP-POP', name: 'Поперечный профиль', type: 'PART', unit: 'шт' },
         { code: 'COMP-FILENKA', name: 'Филенка', type: 'PART', unit: 'шт' },
     ];
 
@@ -95,7 +94,7 @@ export async function seedFacadeBomSetup(dataSource: DataSource) {
             productId: facade.id,
             childProductId: compProductIds['COMP-STOE'],
             name: 'Стоевой профиль',
-            lengthFormula: 'H',
+            lengthFormula: 'ANGLE == 45 ? (H + 2) : H',
             widthFormula: 'W_PR',
             depthFormula: 'T_PR',
             quantityFormula: '2',
@@ -103,33 +102,23 @@ export async function seedFacadeBomSetup(dataSource: DataSource) {
         },
         {
             productId: facade.id,
-            childProductId: compProductIds['COMP-POP-TOP'],
-            name: 'Поперечный профиль (Верх)',
-            lengthFormula: 'W_PR',
-            widthFormula: 'W - 2 * W_PR + 2 * FASKA',
+            childProductId: compProductIds['COMP-POP'],
+            name: 'Поперечный профиль',
+            lengthFormula: 'ANGLE == 45 ? (W + 2) : (W - 2 * W_PR + 2 * FASKA)',
+            widthFormula: 'W_PR',
             depthFormula: 'T_PR',
-            quantityFormula: '1',
+            quantityFormula: '2',
             sortOrder: 2,
-        },
-        {
-            productId: facade.id,
-            childProductId: compProductIds['COMP-POP-BOT'],
-            name: 'Поперечный профиль (Низ)',
-            lengthFormula: 'W_PR_BOTTOM',
-            widthFormula: 'W - 2 * W_PR + 2 * FASKA',
-            depthFormula: 'T_PR',
-            quantityFormula: '1',
-            sortOrder: 3,
         },
         {
             productId: facade.id,
             childProductId: compProductIds['COMP-FILENKA'],
             name: 'Филенка',
-            lengthFormula: 'H - W_PR - W_PR_BOTTOM + 2 * GP',
+            lengthFormula: 'H - 2 * W_PR + 2 * GP',
             widthFormula: 'W - 2 * W_PR + 2 * GP',
             depthFormula: 'T_PAZ',
             quantityFormula: '1',
-            sortOrder: 4,
+            sortOrder: 3,
         }
     ];
 

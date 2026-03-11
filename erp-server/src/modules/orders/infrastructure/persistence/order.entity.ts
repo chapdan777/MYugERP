@@ -24,6 +24,18 @@ export class OrderEntity {
   deadline!: Date | null;
 
   @Column({ nullable: true })
+  documentType?: string;
+
+  @Column({ nullable: true })
+  manager?: string;
+
+  @Column({ nullable: true })
+  orderName?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  launchDate?: Date;
+
+  @Column({ nullable: true })
   lockedBy?: number;
 
   @Column({ type: 'timestamp', nullable: true })

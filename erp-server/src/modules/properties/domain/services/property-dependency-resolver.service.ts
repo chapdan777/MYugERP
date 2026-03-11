@@ -3,6 +3,8 @@ import { PROPERTY_DEPENDENCY_REPOSITORY } from '../repositories/injection-tokens
 import { IPropertyDependencyRepository } from '../repositories/property-dependency.repository.interface';
 import { PropertyDependency } from '../entities/property-dependency.entity';
 import { DependencyType } from '../enums/dependency-type.enum';
+import { PROPERTY_REPOSITORY } from '../repositories/injection-tokens';
+import { IPropertyRepository } from '../repositories/property.repository.interface';
 
 /**
  * Результат разрешения зависимостей
@@ -32,7 +34,9 @@ export class PropertyDependencyResolverService {
   constructor(
     @Inject(PROPERTY_DEPENDENCY_REPOSITORY)
     private readonly dependencyRepository: IPropertyDependencyRepository,
-  ) {}
+    @Inject(PROPERTY_REPOSITORY)
+    private readonly propertyRepository: IPropertyRepository,
+  ) { }
 
   /**
    * Разрешить зависимости для текущего набора значений свойств
@@ -60,7 +64,7 @@ export class PropertyDependencyResolverService {
     // Обрабатываем каждую зависимость
     for (const dependency of allDependencies) {
       const sourceValue = valueMap.get(dependency.getSourcePropertyId()) ?? null;
-      
+
       // Проверяем, срабатывает ли зависимость
       if (!dependency.isTriggeredBy(sourceValue)) {
         continue;
@@ -172,6 +176,11 @@ export class PropertyDependencyResolverService {
           }
         }
         break;
+
+      case DependencyType.INHERITS:
+        // Наследование обрабатывается отдельно через resolveForChildProduct
+        // Здесь ничего не делаем — этот тип работает между уровнями
+        break;
     }
   }
 
@@ -196,6 +205,108 @@ export class PropertyDependencyResolverService {
         );
       }
     }
+  }
+
+  /**
+   * Разрешить наследованные значения свойств от родительского продукта к дочернему.
+   * Ищет зависимости типа INHERITS, где sourcePropertyId принадлежит родителю,
+   * и если у дочернего есть свойство с тем же кодом — передаёт значение.
+   *
+   * @param parentPropertyValues Значения свойств родительского продукта
+   * @param childPropertyIds Список ID свойств дочернего продукта
+   * @returns Map<childPropertyId, inheritedValue> — унаследованные значения
+   */
+  async resolveForChildProduct(
+    parentPropertyValues: PropertyValue[],
+    childPropertyIds: number[],
+  ): Promise<Map<number, string>> {
+    const inheritedValues = new Map<number, string>();
+
+    // Получаем все активные зависимости типа INHERITS
+    const allDeps = await this.dependencyRepository.findAllActive();
+    const inheritDeps = allDeps.filter(
+      d => d.getDependencyType() === DependencyType.INHERITS,
+    );
+
+    if (inheritDeps.length === 0) {
+      // Нет зависимостей INHERITS — пробуем сопоставить по коду свойства
+      return this.resolveByPropertyCode(parentPropertyValues, childPropertyIds);
+    }
+
+    // Создаём карту значений родителя
+    const parentValueMap = new Map<number, string>();
+    for (const pv of parentPropertyValues) {
+      if (pv.value) {
+        parentValueMap.set(pv.propertyId, pv.value);
+      }
+    }
+
+    // Для каждой зависимости INHERITS проверяем, есть ли значение у родителя
+    for (const dep of inheritDeps) {
+      const sourceId = dep.getSourcePropertyId();
+      const targetId = dep.getTargetPropertyId();
+
+      // Проверяем: source должен быть в родительских значениях, target — в дочерних
+      const parentValue = parentValueMap.get(sourceId);
+      if (parentValue && childPropertyIds.includes(targetId)) {
+        inheritedValues.set(targetId, parentValue);
+      }
+    }
+
+    return inheritedValues;
+  }
+
+  /**
+   * Автоматическое сопоставление по коду свойства (fallback).
+   * Если у родителя есть свойство с кодом "material" = "Дуб",
+   * и у дочернего есть свойство с таким же кодом "material" —
+   * значение наследуется автоматически.
+   */
+  private async resolveByPropertyCode(
+    parentPropertyValues: PropertyValue[],
+    childPropertyIds: number[],
+  ): Promise<Map<number, string>> {
+    const inheritedValues = new Map<number, string>();
+
+    // Загрузим информацию о свойствах для получения кодов
+    const parentPropIds = parentPropertyValues
+      .filter(pv => pv.value)
+      .map(pv => pv.propertyId);
+
+    if (parentPropIds.length === 0 || childPropertyIds.length === 0) {
+      return inheritedValues;
+    }
+
+    // Получаем свойства по ID
+    const parentProperties = await Promise.all(
+      parentPropIds.map(id => this.propertyRepository.findById(id)),
+    );
+    const childProperties = await Promise.all(
+      childPropertyIds.map(id => this.propertyRepository.findById(id)),
+    );
+
+    // Строим карту: code -> value для родителя
+    const parentCodeMap = new Map<string, string>();
+    for (let i = 0; i < parentPropIds.length; i++) {
+      const prop = parentProperties[i];
+      const val = parentPropertyValues.find(pv => pv.propertyId === parentPropIds[i]);
+      if (prop && val?.value) {
+        parentCodeMap.set(prop.getCode(), val.value);
+      }
+    }
+
+    // Сопоставляем дочерние свойства с родительскими по коду
+    for (let i = 0; i < childPropertyIds.length; i++) {
+      const childProp = childProperties[i];
+      if (childProp) {
+        const parentValue = parentCodeMap.get(childProp.getCode());
+        if (parentValue) {
+          inheritedValues.set(childPropertyIds[i], parentValue);
+        }
+      }
+    }
+
+    return inheritedValues;
   }
 
   /**
@@ -233,7 +344,7 @@ export class PropertyDependencyResolverService {
       const dependencies = graph.get(propertyId) || [];
       for (const dependency of dependencies) {
         const targetId = dependency.getTargetPropertyId();
-        
+
         if (!visited.has(targetId)) {
           dfs(targetId, [...path]);
         } else if (recursionStack.has(targetId)) {

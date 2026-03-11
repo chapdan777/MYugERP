@@ -12,6 +12,7 @@ import { OperationMaterialForGeneration } from '../../domain/services/work-order
 import { IOperationRepository, OPERATION_REPOSITORY } from '../../../production/domain/repositories/operation.repository.interface';
 import type { IProductComponentSchemaRepository } from '../../../production/domain/repositories/product-component-schema.repository.interface';
 import { PRODUCT_COMPONENT_SCHEMA_REPOSITORY } from '../../../production/domain/repositories/product-component-schema.repository.interface';
+import { ComponentGenerationService } from '../../../production/domain/services/component-generation.service';
 
 @Injectable()
 export class GenerateWorkOrdersUseCase {
@@ -31,6 +32,7 @@ export class GenerateWorkOrdersUseCase {
         private readonly operationRepository: IOperationRepository,
         @Inject(PRODUCT_COMPONENT_SCHEMA_REPOSITORY)
         private readonly schemaRepository: IProductComponentSchemaRepository,
+        private readonly componentGenerationService: ComponentGenerationService,
         private readonly dataSource: DataSource,
     ) { }
 
@@ -54,17 +56,9 @@ export class GenerateWorkOrdersUseCase {
             const propertyValues = new Map<number, number>();
             const propertiesVariableMap: Record<string, any> = {};
 
-            // Populate maps from item properties
+            // For rate selection (value IDs)
             item.getProperties().forEach(prop => {
-                // For variables (numeric values)
                 const numValue = parseFloat(prop.getValue());
-                if (!isNaN(numValue)) {
-                    propertiesVariableMap[prop.getPropertyCode()] = numValue;
-                }
-
-                // For rate selection (value IDs)
-                // Note: PropertyInOrder might not store ID if it's a direct value
-                // In this system, we currently use the numeric value as ID for selection if applicable
                 if (!isNaN(numValue)) {
                     propertyValues.set(prop.getPropertyId(), numValue);
                 }
@@ -84,10 +78,37 @@ export class GenerateWorkOrdersUseCase {
             };
         });
 
-        // Обогащение propertiesVariableMap дефолтными значениями свойств продукта
+        // Обогащение propertiesVariableMap именами переменных
         for (const item of itemsForGeneration) {
+            const propsData = await this.dataSource.query(`
+                SELECT p."variableName", p."defaultValue", p."code", p.id, p."dataType", pio.value as "actualValue"
+                FROM property_in_order pio
+                JOIN properties p ON pio."propertyCode" = p.code
+                WHERE pio."orderItemId" = $1
+            `, [item.id]);
+
+            for (const row of propsData) {
+                const varName = row.variableName || row.code;
+                const valStr = row.actualValue;
+
+                let parsedVal: number | string | boolean = valStr;
+
+                if (valStr === 'true') {
+                    parsedVal = 1;
+                } else if (valStr === 'false') {
+                    parsedVal = 0;
+                } else {
+                    const numValue = parseFloat(valStr);
+                    if (!isNaN(numValue) && String(numValue) === valStr) {
+                        parsedVal = numValue;
+                    }
+                }
+
+                item.propertiesVariableMap[varName] = parsedVal;
+            }
+
             const propDefaults = await this.dataSource.query(`
-                SELECT p."variableName", p."defaultValue"
+                SELECT p."variableName", p."defaultValue", p.code
                 FROM product_properties pp
                 JOIN properties p ON pp."propertyId" = p.id
                 WHERE pp."productId" = $1
@@ -96,11 +117,21 @@ export class GenerateWorkOrdersUseCase {
             `, [item.productId]);
 
             for (const pd of propDefaults) {
-                if (!item.propertiesVariableMap[pd.variableName]) {
-                    const numVal = parseFloat(pd.defaultValue);
-                    if (!isNaN(numVal)) {
-                        item.propertiesVariableMap[pd.variableName] = numVal;
+                const varName = pd.variableName || pd.code;
+                if (item.propertiesVariableMap[varName] === undefined) {
+                    let parsedVal: number | string | boolean = pd.defaultValue;
+                    if (pd.defaultValue === 'true') {
+                        parsedVal = 1;
+                    } else if (pd.defaultValue === 'false') {
+                        parsedVal = 0;
+                    } else {
+                        const numVal = parseFloat(pd.defaultValue);
+                        if (!isNaN(numVal) && String(numVal) === pd.defaultValue) {
+                            parsedVal = numVal;
+                        }
                     }
+
+                    item.propertiesVariableMap[varName] = parsedVal;
                 }
             }
         }
@@ -125,71 +156,34 @@ export class GenerateWorkOrdersUseCase {
         const componentSchemas = new Map<number, ComponentSchemaForGeneration[]>();
         const operationMaterials: OperationMaterialForGeneration[] = [];
 
-        // Получение всех ID продуктов
-        const productIds = Array.from(new Set(orderData.items.map(i => i.productId)));
+        // Получение всех ID продуктов (включая рекурсивные компоненты)
+        const topLevelProductIds = Array.from(new Set(orderData.items.map(i => i.productId)));
+        const allProductIdsToLoadMetadata = new Set<number>(topLevelProductIds);
 
-        // Получение маршрутов и материалов
-        for (const productId of productIds) {
-            const route = await this.routeRepository.findActiveByProductId(productId);
-            if (route) {
-                // Steps
-                const mappedSteps = [];
-                for (const step of route.getSortedSteps()) {
-                    const op = await this.operationRepository.findById(step.getOperationId());
-                    mappedSteps.push({
-                        operationId: step.getOperationId(),
-                        operationCode: op?.getCode() || `OP-${step.getOperationId()}`,
-                        operationName: op?.getName() || `Op ${step.getOperationId()}`,
-                        stepNumber: step.getStepNumber(),
-                        isRequired: step.getIsRequired(),
-                    });
-                }
-                operationSteps.set(productId, mappedSteps);
+        // Сначала загружаем схемы компонентов рекурсивно, чтобы найти ВСЕ продукты в цепочке
+        const processedProductIdsForSchemas = new Set<number>();
+        const schemasToProcess = Array.from(topLevelProductIds);
 
-                // Materials
-                for (const step of route.getSteps()) {
-                    for (const mat of step.getMaterials()) {
-                        // Fetch material product info to get name
-                        // Optimization: Should probably collect IDs and fetch in bulk, but for now individual fetch
-                        const materialProduct = await this.productRepository.findById(mat.getMaterialId());
+        while (schemasToProcess.length > 0) {
+            const currentProductId = schemasToProcess.pop()!;
+            if (processedProductIdsForSchemas.has(currentProductId)) continue;
+            processedProductIdsForSchemas.add(currentProductId);
 
-                        operationMaterials.push({
-                            operationId: step.getOperationId(),
-                            productId: productId,
-                            materialId: mat.getMaterialId(),
-                            materialName: materialProduct ? materialProduct.getName() : `Material #${mat.getMaterialId()}`,
-                            consumptionFormula: mat.getConsumptionFormula(),
-                            unit: mat.getUnit(),
-                        });
-                    }
-                }
-
-                // Сбор ID операций для получения участков и ставок
-                for (const step of route.getSteps()) {
-                    const opId = step.getOperationId();
-                    if (!departmentsByOperation.has(opId)) {
-                        // Получение участков для операции
-                        const departments = await this.departmentRepository.findByOperationId(opId);
-                        departmentsByOperation.set(opId, departments.map(d => ({
-                            departmentId: d.departmentId,
-                            departmentName: d.departmentName,
-                            priority: d.priority
-                        })));
-                    }
-                }
-            }
-        }
-
-        // Загрузка схем компонентов (BOM) из базы данных
-        for (const productId of productIds) {
-            const schemas = await this.schemaRepository.findByProductId(productId);
+            const schemas = await this.schemaRepository.findByProductId(currentProductId);
             if (schemas.length > 0) {
                 const mappedSchemas: ComponentSchemaForGeneration[] = [];
                 for (const schema of schemas) {
                     let childProductName: string | null = null;
                     if (schema.hasChildProduct()) {
-                        const childProduct = await this.productRepository.findById(schema.getChildProductId()!);
+                        const childId = schema.getChildProductId()!;
+                        const childProduct = await this.productRepository.findById(childId);
                         childProductName = childProduct ? childProduct.getName() : null;
+
+                        // Добавляем дочерний продукт в список всех продуктов и в очередь обработки схем
+                        allProductIdsToLoadMetadata.add(childId);
+                        if (!processedProductIdsForSchemas.has(childId)) {
+                            schemasToProcess.push(childId);
+                        }
                     }
                     mappedSchemas.push({
                         name: schema.getName(),
@@ -204,8 +198,50 @@ export class GenerateWorkOrdersUseCase {
                         sortOrder: schema.getSortOrder(),
                     });
                 }
-                componentSchemas.set(productId, mappedSchemas);
-                console.log(`[BOM] Загружено ${mappedSchemas.length} схем компонентов для продукта ${productId}`);
+                componentSchemas.set(currentProductId, mappedSchemas);
+            }
+        }
+
+        // Теперь загружаем маршруты и материалы для ВСЕХ найденных продуктов
+        for (const productId of allProductIdsToLoadMetadata) {
+            const route = await this.routeRepository.findActiveByProductId(productId);
+            if (route) {
+                const mappedSteps = [];
+                for (const step of route.getSortedSteps()) {
+                    const op = await this.operationRepository.findById(step.getOperationId());
+                    mappedSteps.push({
+                        operationId: step.getOperationId(),
+                        operationCode: op?.getCode() || `OP-${step.getOperationId()}`,
+                        operationName: op?.getName() || `Op ${step.getOperationId()}`,
+                        stepNumber: step.getStepNumber(),
+                        isRequired: step.getIsRequired(),
+                    });
+                }
+                operationSteps.set(productId, mappedSteps);
+
+                for (const step of route.getSteps()) {
+                    for (const mat of step.getMaterials()) {
+                        const materialProduct = await this.productRepository.findById(mat.getMaterialId());
+                        operationMaterials.push({
+                            operationId: step.getOperationId(),
+                            productId: productId,
+                            materialId: mat.getMaterialId(),
+                            materialName: materialProduct ? materialProduct.getName() : `Material #${mat.getMaterialId()}`,
+                            consumptionFormula: mat.getConsumptionFormula(),
+                            unit: mat.getUnit(),
+                        });
+                    }
+
+                    const opId = step.getOperationId();
+                    if (!departmentsByOperation.has(opId)) {
+                        const departments = await this.departmentRepository.findByOperationId(opId);
+                        departmentsByOperation.set(opId, departments.map(d => ({
+                            departmentId: d.departmentId,
+                            departmentName: d.departmentName,
+                            priority: d.priority
+                        })));
+                    }
+                }
             }
         }
 
@@ -218,7 +254,62 @@ export class GenerateWorkOrdersUseCase {
             propertyValueId: r.getPropertyValueId() || null,
         }));
 
-        // 4. Запуск генерации
+        // 4. Генерируем полный список позиций для генерации (включая вложенные компоненты с маршрутами)
+        const finalItemsForGeneration: any[] = [];
+
+        // Подготовим вспомогательную функцию для рекурсивного сбора
+        const processItemRecursively = async (item: any) => {
+            finalItemsForGeneration.push(item);
+
+            const schemas = componentSchemas.get(item.productId) || [];
+            if (schemas.length > 0) {
+                try {
+                    const generated = this.componentGenerationService.generateComponentsDetailed(
+                        {
+                            id: item.id,
+                            width: item.width,
+                            height: item.height,
+                            depth: item.depth,
+                            properties: item.propertiesVariableMap
+                        },
+                        schemas,
+                        componentSchemas
+                    );
+
+                    for (const gen of generated) {
+                        if (gen.childProductId) {
+                            // Проверяем, есть ли у дочернего продукта свой маршрут
+                            const childRoute = await this.routeRepository.findActiveByProductId(gen.childProductId);
+                            if (childRoute) {
+                                // Если есть маршрут - добавляем в список генерации как отдельную позицию
+                                await processItemRecursively({
+                                    id: item.id, // Ссылаемся на родительскую позицию
+                                    productId: gen.childProductId,
+                                    productName: gen.orderItemComponent.getName(),
+                                    quantity: gen.calculatedQuantity * item.quantity,
+                                    unit: 'шт',
+                                    width: gen.calculatedWidth,
+                                    height: gen.calculatedLength,
+                                    depth: gen.calculatedDepth,
+                                    propertyValues: new Map(), // Свойства наследуются через propertiesVariableMap
+                                    propertiesVariableMap: { ...item.propertiesVariableMap }
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Ошибка при рекурсивном разборе BOM для ${item.productName}:`, e);
+                }
+            }
+        };
+
+        for (const item of itemsForGeneration) {
+            await processItemRecursively(item);
+        }
+
+        orderData.items = finalItemsForGeneration;
+
+        // 5. Запуск генерации
         if (regenerate) {
             return this.generationService.regenerateWorkOrders(orderId, {
                 orderData,
@@ -236,7 +327,7 @@ export class GenerateWorkOrdersUseCase {
             operationRates,
             departmentsByOperation,
             operationMaterials,
-            componentSchemas // Схемы компонентов передаются (если найдены)
+            componentSchemas
         });
     }
 }

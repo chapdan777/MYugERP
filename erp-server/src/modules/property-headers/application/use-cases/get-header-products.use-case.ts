@@ -8,7 +8,7 @@ export class GetHeaderProductsUseCase {
         private readonly propertyHeaderService: PropertyHeaderService,
     ) { }
 
-    async execute(headerId: number): Promise<PropertyHeaderProduct[]> {
-        return await this.propertyHeaderService.getHeaderProducts(headerId);
+    async execute(headerId: number, includeInactive?: boolean): Promise<PropertyHeaderProduct[]> {
+        return await this.propertyHeaderService.getHeaderProducts(headerId, includeInactive);
     }
 }

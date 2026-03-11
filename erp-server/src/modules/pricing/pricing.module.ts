@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PriceModifierEntity } from './infrastructure/persistence/price-modifier.entity';
 import { PriceModifierRepository } from './infrastructure/persistence/price-modifier.repository';
@@ -21,11 +21,13 @@ import { ProductPriceCalculatorService } from './domain/services/product-price-c
 import { PricingController } from './presentation/controllers/pricing.controller';
 
 import { ProductsModule } from '../products/products.module';
+import { ProductionModule } from '../production/production.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PriceModifierEntity]),
-    ProductsModule,
+    forwardRef(() => ProductsModule),
+    forwardRef(() => ProductionModule),
   ],
   controllers: [PriceModifiersController, PricingController],
   providers: [

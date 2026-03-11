@@ -25,6 +25,7 @@ export interface CalculatePriceResult {
   finalPrice: number; // Окончательная цена
   unitType: 'm2' | 'linear_meter' | 'unit';
   quantity: number;
+  components?: any[]; // Рассчитанный состав изделия (BOM)
 }
 
 interface AppliedModifier {

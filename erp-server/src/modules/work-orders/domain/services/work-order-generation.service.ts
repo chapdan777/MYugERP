@@ -136,7 +136,8 @@ export class WorkOrderGenerationService {
               depth: item.depth,
               properties: item.propertiesVariableMap
             },
-            schemas
+            schemas,
+            componentSchemas
           );
 
           // Сохраняем сгенерированные компоненты
@@ -322,14 +323,25 @@ export class WorkOrderGenerationService {
       (!m.productId || m.productId === item.productId)
     );
 
-    // Контекст для формул (габариты + переменные свойства)
-    const context = {
+    // Контекст для формул (габариты + переменные свойства + хелперы)
+    const context: any = {
       H: item.height,
       W: item.width,
       D: item.depth || 0,
       Q: item.quantity,
-      ...item.propertiesVariableMap
+      ...item.propertiesVariableMap,
+      // Хелпер для сравнения строк в math.js
+      is: (a: any, b: any) => (a === b ? 1 : 0),
     };
+
+    // Автоматические производные переменные для упрощения формул
+    if (context.color) {
+      const enamelColors = ['Белый', 'Кремовый', 'RAL 7035'];
+      context.is_enamel = enamelColors.includes(context.color) ? 1 : 0;
+    }
+    if (context.patina) {
+      context.has_patina = context.patina !== 'Нет' ? 1 : 0;
+    }
 
     for (const mat of applicableMaterials) {
       try {
