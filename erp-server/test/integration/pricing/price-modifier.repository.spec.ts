@@ -375,19 +375,19 @@ describe('PriceModifierRepository (integration)', () => {
       // Create multiple modifiers
       const modifiers = [
         PriceModifier.create({
-          name: 'Integrity Test 1',
+          name: 'Test: Price Adjustment 1',
           code: 'INT_001',
           modifierType: ModifierType.PERCENTAGE,
           value: 10,
         }),
         PriceModifier.create({
-          name: 'Integrity Test 2',
+          name: 'Test: Price Adjustment 2',
           code: 'INT_002',
           modifierType: ModifierType.FIXED_AMOUNT,
           value: 150,
         }),
         PriceModifier.create({
-          name: 'Integrity Test 3',
+          name: 'Test: Price Adjustment 3',
           code: 'INT_003',
           modifierType: ModifierType.MULTIPLIER,
           value: 1.25,

@@ -15,6 +15,7 @@ export class UpdateProductDto {
   defaultLength?: number;
   defaultWidth?: number;
   defaultDepth?: number;
+  routeTemplateId?: number | null;
 }
 
 /**
@@ -60,6 +61,7 @@ export class UpdateProductUseCase {
       defaultLength: dto.defaultLength,
       defaultWidth: dto.defaultWidth,
       defaultDepth: dto.defaultDepth,
+      routeTemplateId: dto.routeTemplateId,
     });
 
     console.log('🛠 Product state after updateInfo:', {

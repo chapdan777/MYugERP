@@ -31,6 +31,7 @@ export interface OperationStepForGeneration {
   operationName: string;
   stepNumber: number;
   isRequired: boolean;
+  conditionFormula?: string | null;
 }
 
 export interface OperationRateForGeneration {
@@ -223,6 +224,27 @@ export class WorkOrderGenerationService {
         if (step.operationId === 0) {
           this.logger.debug(`Пропущена операция 0 (material-only) для продукта ${item.productId}`);
           continue;
+        }
+
+        // Оценка условия шага маршрута
+        if (step.conditionFormula) {
+          try {
+            const conditionContext: Record<string, any> = {
+              H: item.height,
+              W: item.width,
+              D: item.depth || 0,
+              Q: item.quantity,
+              ...item.propertiesVariableMap,
+              is: (a: any, b: any) => (a === b ? 1 : 0),
+            };
+            const conditionResult = this.formulaEvaluator.evaluate(step.conditionFormula, conditionContext);
+            if (!conditionResult || conditionResult === 0) {
+              this.logger.log(`Пропущен шаг "${step.operationName}" (условие: ${step.conditionFormula} → ${conditionResult})`);
+              continue;
+            }
+          } catch (e: any) {
+            this.logger.error(`Ошибка оценки условия шага "${step.operationName}": ${e.message}. Шаг будет включён.`);
+          }
         }
 
         // Поиск подходящего участка

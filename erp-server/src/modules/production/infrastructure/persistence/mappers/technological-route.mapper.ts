@@ -18,6 +18,7 @@ export class TechnologicalRouteMapper {
             name: entity.name,
             description: entity.description || null,
             isActive: entity.isActive,
+            isTemplate: entity.isTemplate ?? false,
             steps: steps,
             createdAt: entity.createdAt,
             updatedAt: entity.updatedAt,
@@ -42,8 +43,9 @@ export class TechnologicalRouteMapper {
             stepNumber: entity.stepNumber,
             description: entity.description || null,
             isRequired: entity.isRequired,
+            conditionFormula: entity.conditionFormula || null,
             materials: materials,
-            createdAt: new Date(), // Step entity doesn't have createdAt usually
+            createdAt: new Date(),
             updatedAt: new Date(),
         });
     }
@@ -57,7 +59,14 @@ export class TechnologicalRouteMapper {
         entity.name = domain.getName();
         entity.description = domain.getDescription();
         entity.isActive = domain.getIsActive();
-        entity.steps = domain.getSteps().map((step: RouteStep) => TechnologicalRouteMapper.toPersistenceStep(step));
+        entity.isTemplate = domain.getIsTemplate();
+        
+        entity.steps = domain.getSteps().map((step: RouteStep) => {
+            const stepEntity = TechnologicalRouteMapper.toPersistenceStep(step);
+            stepEntity.route = entity; // Устанавливаем обратную ссылку для корректного сохранения route_id
+            return stepEntity;
+        });
+        
         entity.createdAt = domain.getCreatedAt();
         entity.updatedAt = domain.getUpdatedAt();
         return entity;
@@ -73,13 +82,16 @@ export class TechnologicalRouteMapper {
         entity.stepNumber = domain.getStepNumber();
         entity.description = domain.getDescription();
         entity.isRequired = domain.getIsRequired();
+        entity.conditionFormula = domain.getConditionFormula();
 
         entity.materials = domain.getMaterials().map(m => {
             const materialEntity = new RouteStepMaterialEntity();
             if (m.getId()) materialEntity.id = m.getId() as number;
+            materialEntity.routeStepId = domain.getId() as number; // Может быть null для новых
             materialEntity.materialId = m.getMaterialId();
             materialEntity.consumptionFormula = m.getConsumptionFormula();
             materialEntity.unit = m.getUnit();
+            materialEntity.routeStep = entity; // Устанавливаем обратную ссылку
             return materialEntity;
         });
 

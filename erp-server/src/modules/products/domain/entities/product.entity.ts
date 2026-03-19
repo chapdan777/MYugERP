@@ -18,6 +18,7 @@ export class Product {
   private defaultWidth: number | null;
   private defaultDepth: number | null;
   private isActive: boolean;
+  private routeTemplateId: number | null;
   private createdAt: Date;
   private updatedAt: Date;
 
@@ -33,6 +34,7 @@ export class Product {
     defaultWidth?: number | null;
     defaultDepth?: number | null;
     isActive?: boolean;
+    routeTemplateId?: number | null;
     createdAt?: Date;
     updatedAt?: Date;
   }) {
@@ -47,6 +49,7 @@ export class Product {
     this.defaultWidth = props.defaultWidth ?? null;
     this.defaultDepth = props.defaultDepth ?? null;
     this.isActive = props.isActive ?? true;
+    this.routeTemplateId = props.routeTemplateId ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
 
@@ -66,6 +69,7 @@ export class Product {
     defaultLength?: number | null;
     defaultWidth?: number | null;
     defaultDepth?: number | null;
+    routeTemplateId?: number | null;
   }): Product {
     return new Product(props);
   }
@@ -85,6 +89,7 @@ export class Product {
     defaultWidth?: number | null;
     defaultDepth?: number | null;
     isActive: boolean;
+    routeTemplateId?: number | null;
     createdAt: Date;
     updatedAt: Date;
   }): Product {
@@ -121,6 +126,7 @@ export class Product {
     defaultLength?: number | null;
     defaultWidth?: number | null;
     defaultDepth?: number | null;
+    routeTemplateId?: number | null;
   }): void {
     if (props.name !== undefined) {
       this.name = props.name;
@@ -159,6 +165,10 @@ export class Product {
 
     if (props.defaultDepth !== undefined) {
       this.defaultDepth = props.defaultDepth;
+    }
+
+    if (props.routeTemplateId !== undefined) {
+      this.routeTemplateId = props.routeTemplateId;
     }
 
     this.updatedAt = new Date();
@@ -238,5 +248,9 @@ export class Product {
 
   getDefaultDepth(): number | null {
     return this.defaultDepth;
+  }
+
+  getRouteTemplateId(): number | null {
+    return this.routeTemplateId;
   }
 }

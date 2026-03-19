@@ -71,6 +71,7 @@ export class CalculatePriceUseCase {
         finalPrice: result.finalPrice,
         unitType: result.unitType,
         quantity: result.quantity,
+        components: result.components,
       };
     }
 

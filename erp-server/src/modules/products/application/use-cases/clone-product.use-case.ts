@@ -122,6 +122,7 @@ export class CloneProductUseCase {
                     stepNumber: step.getStepNumber(),
                     description: step.getDescription(),
                     isRequired: step.getIsRequired(),
+                    conditionFormula: step.getConditionFormula(),
                     materials: materials,
                 });
 

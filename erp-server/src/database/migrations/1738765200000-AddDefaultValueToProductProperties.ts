@@ -5,7 +5,7 @@ export class AddDefaultValueToProductProperties1738765200000 implements Migratio
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(
-            `ALTER TABLE "product_properties" ADD COLUMN "defaultValue" VARCHAR(255) NULL`,
+            `ALTER TABLE "product_properties" ADD COLUMN IF NOT EXISTS "defaultValue" VARCHAR(255) NULL`,
         );
     }
 

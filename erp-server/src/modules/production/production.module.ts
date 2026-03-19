@@ -31,6 +31,7 @@ import { ProductComponentSchemaController } from './presentation/controllers/pro
 import { RouteStepMaterialEntity } from './infrastructure/persistence/entities/route-step-material.entity';
 import { CreateTechnologicalRouteUseCase } from './application/use-cases/create-technological-route.use-case';
 import { GetTechnologicalRouteUseCase } from './application/use-cases/get-technological-route.use-case';
+import { UpdateTechnologicalRouteUseCase } from './application/use-cases/update-technological-route.use-case';
 import { TechnologicalRouteController } from './presentation/controllers/technological-route.controller';
 import { OperationController } from './presentation/controllers/operation.controller';
 import { DepartmentOperationController } from './presentation/controllers/department-operation.controller';
@@ -81,6 +82,7 @@ import { PropertiesModule } from '../properties/properties.module';
     GetNestedProductPropertiesUseCase,
     CreateTechnologicalRouteUseCase,
     GetTechnologicalRouteUseCase,
+    UpdateTechnologicalRouteUseCase,
     CreateOperationUseCase,
     UpdateOperationUseCase,
     CreateDepartmentOperationUseCase,

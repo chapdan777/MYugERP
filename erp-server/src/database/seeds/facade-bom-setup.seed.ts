@@ -2,11 +2,13 @@ import { DataSource } from 'typeorm';
 import { PropertyEntity } from '../../modules/properties/infrastructure/persistence/property.entity';
 import { ProductEntity } from '../../modules/products/infrastructure/persistence/product.entity';
 import { ProductComponentSchemaEntity } from '../../modules/production/infrastructure/persistence/entities/product-component-schema.entity';
+import { ProductPropertyEntity } from '../../modules/products/infrastructure/persistence/product-property.entity';
 
 export async function seedFacadeBomSetup(dataSource: DataSource) {
     const propertyRepo = dataSource.getRepository(PropertyEntity);
     const productRepo = dataSource.getRepository(ProductEntity);
     const schemaRepo = dataSource.getRepository(ProductComponentSchemaEntity);
+    const productPropertyRepo = dataSource.getRepository(ProductPropertyEntity);
 
     console.log('--- Starting Facade BOM Setup Seed ---');
 
@@ -85,7 +87,42 @@ export async function seedFacadeBomSetup(dataSource: DataSource) {
         console.log(`Universal Facade already exists: ${facade.name}`);
     }
 
-    // 4. Setup BOM (ProductComponentSchemas)
+    // 4. Link Properties to Facade
+    const propertiesToLink = [
+        { code: 'W_PR', defaultValue: '70' },
+        { code: 'W_PR_BOTTOM', defaultValue: '70' },
+        { code: 'T_PR', defaultValue: '22' },
+        { code: 'GP', defaultValue: '10' },
+        { code: 'FASKA', defaultValue: '3' },
+        { code: 'T_PAZ', defaultValue: '10' },
+        { code: 'assembly_angle', defaultValue: '45' },
+        { code: 'texture', defaultValue: 'прямая' },
+        { code: 'material', defaultValue: 'Дуб' },
+    ];
+
+    for (const link of propertiesToLink) {
+        const property = await propertyRepo.findOne({ where: { code: link.code } });
+        if (property) {
+            let existingLink = await productPropertyRepo.findOne({ 
+                where: { productId: facade.id, propertyId: property.id } 
+            });
+            if (!existingLink) {
+                existingLink = productPropertyRepo.create({
+                    productId: facade.id,
+                    propertyId: property.id,
+                    defaultValue: link.defaultValue,
+                    isActive: true,
+                    isRequired: false,
+                });
+                await productPropertyRepo.save(existingLink);
+                console.log(`Linked Property ${link.code} to Facade`);
+            }
+        } else {
+            console.log(`Property ${link.code} NOT FOUND in database, skip linking.`);
+        }
+    }
+
+    // 5. Setup BOM (ProductComponentSchemas)
     // Clear existing BOM for this facade to prevent duplicates during re-runs
     await schemaRepo.delete({ productId: facade.id });
 

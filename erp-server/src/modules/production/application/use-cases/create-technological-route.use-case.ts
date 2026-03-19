@@ -13,19 +13,22 @@ export class CreateTechnologicalRouteUseCase {
     ) { }
 
     async execute(dto: CreateTechnologicalRouteDto): Promise<TechnologicalRoute> {
-        // 1. Deactivate existing active route if needed
-        const existingActive = await this.repository.findActiveByProductId(dto.productId);
-        if (existingActive) {
-            existingActive.updateInfo({ isActive: false });
-            await this.repository.save(existingActive);
+        // 1. Деактивация существующего маршрута (только для обычных маршрутов, не шаблонов)
+        if (!dto.isTemplate && dto.productId > 0) {
+            const existingActive = await this.repository.findActiveByProductId(dto.productId);
+            if (existingActive) {
+                existingActive.updateInfo({ isActive: false });
+                await this.repository.save(existingActive);
+            }
         }
 
-        // 2. Create new route
+        // 2. Создание нового маршрута
         const route = TechnologicalRoute.create({
-            productId: dto.productId,
+            productId: dto.isTemplate ? 0 : dto.productId,
             name: dto.name,
             description: dto.description,
             isActive: true,
+            isTemplate: dto.isTemplate ?? false,
         });
 
         // 3. Add steps
@@ -38,14 +41,11 @@ export class CreateTechnologicalRouteUseCase {
             }));
 
             const step = RouteStep.create({
-                routeId: 0, // Temporary ID, will be set by persistence? No, entity needs it. But route ID is unknown before save? 
-                // Domain usually doesn't need routeId if aggregated. But TypeORM needs it. 
-                // In my entity design, 'routeId' is part of RouteStep props. 
-                // However, valid aggregation creation often relies on ID being generated later.
-                // We can pass 0 or mock ID, and TypeORM cascade will handle foreign key assignment.
+                routeId: 0,
                 operationId: stepDto.operationId,
                 stepNumber: stepDto.stepNumber,
                 isRequired: stepDto.isRequired,
+                conditionFormula: stepDto.conditionFormula || null,
                 materials: materials,
             });
 

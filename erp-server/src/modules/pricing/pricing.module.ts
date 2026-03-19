@@ -22,12 +22,14 @@ import { PricingController } from './presentation/controllers/pricing.controller
 
 import { ProductsModule } from '../products/products.module';
 import { ProductionModule } from '../production/production.module';
+import { PropertiesModule } from '../properties/properties.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PriceModifierEntity]),
     forwardRef(() => ProductsModule),
     forwardRef(() => ProductionModule),
+    forwardRef(() => PropertiesModule),
   ],
   controllers: [PriceModifiersController, PricingController],
   providers: [

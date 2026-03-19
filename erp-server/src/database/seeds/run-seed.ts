@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { runInitialSeed } from './initial-seed';
 import { seedFacadeBomSetup } from './facade-bom-setup.seed';
 import { seedRecoveryData } from './recovery-data.seed';
+import { seedRouteTemplates } from './route-templates.seed';
 import { seedTestOrder } from './create-test-order.seed';
 import { seedCleanupAndFinalize } from './cleanup-and-finalize.seed';
 import * as dotenv from 'dotenv';
@@ -40,6 +41,8 @@ async function main() {
     await seedFacadeBomSetup(dataSource);
     console.log('🌱 Running Recovery Data seed...');
     await seedRecoveryData(dataSource);
+    console.log('🌱 Running Route Templates seed...');
+    await seedRouteTemplates(dataSource);
     console.log('🌱 Running Test Order seed...');
     await seedTestOrder(dataSource);
     console.log('🌱 Running Cleanup and Finalization seed...');

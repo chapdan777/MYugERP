@@ -1,0 +1,72 @@
+
+> erp-server@0.0.1 migration:run
+> typeorm-ts-node-commonjs migration:run -d src/common/config/typeorm.config.ts
+
+[dotenv@17.2.3] injecting env (14) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[90m[4mquery:[24m[39m [94mSELECT[0m [95mversion[0m[37m([0m[37m)[0m
+[90m[4mquery:[24m[39m [94mSELECT[0m [37m*[0m [94mFROM[0m [95mcurrent_schema[0m[37m([0m[37m)[0m
+[90m[4mquery:[24m[39m [94mSELECT[0m [37m*[0m [94mFROM[0m [37m"information_schema"[0m[37m.[0m[37m"tables"[0m [94mWHERE[0m [37m"table_schema"[0m [37m=[0m [37m'public'[0m [94mAND[0m [37m"table_name"[0m [37m=[0m [37m'migrations'[0m
+[90m[4mquery:[24m[39m [94mSELECT[0m [37m*[0m [94mFROM[0m [37m"migrations"[0m [37m"migrations"[0m [94mORDER BY[0m [37m"id"[0m [94mDESC[0m
+[4m0 migrations are already loaded in the database.[24m
+[4m5 migrations were found in the source code.[24m
+[4m5 migrations are new migrations must be executed.[24m
+[90m[4mquery:[24m[39m [37mSTART[0m [37mTRANSACTION[0m
+[90m[4mquery:[24m[39m [94mALTER TABLE[0m [37m"product_properties"[0m [94mADD[0m [94mCOLUMN[0m [37m"defaultValue"[0m [94mVARCHAR[0m[37m([0m[32m255[0m[37m)[0m [94mNULL[0m
+[4m[31mquery failed:[39m[24m [94mALTER TABLE[0m [37m"product_properties"[0m [94mADD[0m [94mCOLUMN[0m [37m"defaultValue"[0m [94mVARCHAR[0m[37m([0m[32m255[0m[37m)[0m [94mNULL[0m
+[4m[31merror:[39m[24m error: column "defaultValue" of relation "product_properties" already exists
+[4mMigration "AddDefaultValueToProductProperties1738765200000" failed, error: column "defaultValue" of relation "product_properties" already exists[24m
+[90m[4mquery:[24m[39m [37mROLLBACK[0m
+[30m[41mError during migration run:[49m[39m
+QueryFailedError: column "defaultValue" of relation "product_properties" already exists
+    at PostgresQueryRunner.query (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:325:19)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async AddDefaultValueToProductProperties1738765200000.up (/Users/mironocean/Documents/Progs/MYugERP/erp-server/src/database/migrations/1738765200000-AddDefaultValueToProductProperties.ts:7:9)
+    at async MigrationExecutor.executePendingMigrations (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/src/migration/MigrationExecutor.ts:336:17)
+    at async DataSource.runMigrations (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/src/data-source/DataSource.ts:404:13)
+    at async Object.handler (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/src/commands/MigrationRunCommand.ts:76:13) {
+  query: 'ALTER TABLE "product_properties" ADD COLUMN "defaultValue" VARCHAR(255) NULL',
+  parameters: undefined,
+  driverError: error: column "defaultValue" of relation "product_properties" already exists
+      at /Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/pg/lib/client.js:545:17
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async PostgresQueryRunner.query (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:254:25)
+      at async AddDefaultValueToProductProperties1738765200000.up (/Users/mironocean/Documents/Progs/MYugERP/erp-server/src/database/migrations/1738765200000-AddDefaultValueToProductProperties.ts:7:9)
+      at async MigrationExecutor.executePendingMigrations (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/src/migration/MigrationExecutor.ts:336:17)
+      at async DataSource.runMigrations (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/src/data-source/DataSource.ts:404:13)
+      at async Object.handler (/Users/mironocean/Documents/Progs/MYugERP/erp-server/node_modules/src/commands/MigrationRunCommand.ts:76:13) {
+    length: 149,
+    severity: 'ERROR',
+    code: '42701',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'tablecmds.c',
+    line: '7083',
+    routine: 'check_for_column_name_collision'
+  },
+  length: 149,
+  severity: 'ERROR',
+  code: '42701',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'tablecmds.c',
+  line: '7083',
+  routine: 'check_for_column_name_collision'
+}

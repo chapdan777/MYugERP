@@ -12,6 +12,7 @@ export class RouteStep {
   private stepNumber: number; // Sequence order
   private description: string | null;
   private isRequired: boolean;
+  private conditionFormula: string | null;
   private materials: OperationMaterial[];
   private createdAt: Date;
   private updatedAt: Date;
@@ -23,6 +24,7 @@ export class RouteStep {
     stepNumber: number;
     description?: string | null;
     isRequired?: boolean;
+    conditionFormula?: string | null;
     materials?: OperationMaterial[];
     createdAt?: Date;
     updatedAt?: Date;
@@ -33,6 +35,7 @@ export class RouteStep {
     this.stepNumber = props.stepNumber;
     this.description = props.description ?? null;
     this.isRequired = props.isRequired ?? true;
+    this.conditionFormula = props.conditionFormula ?? null;
     this.materials = props.materials ?? [];
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
@@ -49,6 +52,7 @@ export class RouteStep {
     stepNumber: number;
     description?: string | null;
     isRequired?: boolean;
+    conditionFormula?: string | null;
     materials?: OperationMaterial[];
   }): RouteStep {
     return new RouteStep(props);
@@ -64,6 +68,7 @@ export class RouteStep {
     stepNumber: number;
     description: string | null;
     isRequired: boolean;
+    conditionFormula: string | null;
     materials: OperationMaterial[];
     createdAt: Date;
     updatedAt: Date;
@@ -96,6 +101,7 @@ export class RouteStep {
     stepNumber?: number;
     description?: string | null;
     isRequired?: boolean;
+    conditionFormula?: string | null;
   }): void {
     if (props.stepNumber !== undefined) {
       if (props.stepNumber < 0) {
@@ -110,6 +116,10 @@ export class RouteStep {
 
     if (props.isRequired !== undefined) {
       this.isRequired = props.isRequired;
+    }
+
+    if (props.conditionFormula !== undefined) {
+      this.conditionFormula = props.conditionFormula;
     }
 
     this.updatedAt = new Date();
@@ -138,6 +148,10 @@ export class RouteStep {
 
   getIsRequired(): boolean {
     return this.isRequired;
+  }
+
+  getConditionFormula(): string | null {
+    return this.conditionFormula;
   }
 
   getMaterials(): OperationMaterial[] {

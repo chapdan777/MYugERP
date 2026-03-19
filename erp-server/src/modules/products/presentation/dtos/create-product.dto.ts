@@ -18,6 +18,7 @@ export class CreateProductDto {
   description?: string;
 
   @IsNumber()
+  @IsNotEmpty()
   basePrice!: number;
 
   @IsString()
@@ -35,4 +36,8 @@ export class CreateProductDto {
   @IsNumber()
   @IsOptional()
   defaultDepth?: number;
+
+  @IsNumber()
+  @IsOptional()
+  routeTemplateId?: number;
 }

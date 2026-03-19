@@ -79,59 +79,57 @@ export class GenerateWorkOrdersUseCase {
         });
 
         // Обогащение propertiesVariableMap именами переменных
-        for (const item of itemsForGeneration) {
-            const propsData = await this.dataSource.query(`
-                SELECT p."variableName", p."defaultValue", p."code", p.id, p."dataType", pio.value as "actualValue"
-                FROM property_in_order pio
-                JOIN properties p ON pio."propertyCode" = p.code
-                WHERE pio."orderItemId" = $1
-            `, [item.id]);
+        for (const section of order.getSections()) {
+            const sectionItems = section.getItems();
+            const headerId = section.getHeaderId();
+            
+            // 2.1 Get Header Properties if present
+            const headerPropsMap: Record<string, any> = {};
+            if (headerId) {
+                const headerItems = await this.dataSource.query(`
+                    SELECT p."variableName", p.code, phi.value
+                    FROM property_header_items phi
+                    JOIN properties p ON phi."propertyId" = p.id
+                    WHERE phi."headerId" = $1
+                `, [headerId]);
 
-            for (const row of propsData) {
-                const varName = row.variableName || row.code;
-                const valStr = row.actualValue;
-
-                let parsedVal: number | string | boolean = valStr;
-
-                if (valStr === 'true') {
-                    parsedVal = 1;
-                } else if (valStr === 'false') {
-                    parsedVal = 0;
-                } else {
-                    const numValue = parseFloat(valStr);
-                    if (!isNaN(numValue) && String(numValue) === valStr) {
-                        parsedVal = numValue;
-                    }
+                for (const hp of headerItems) {
+                    const varName = hp.variableName || hp.code;
+                    headerPropsMap[varName] = this.parsePropValue(hp.value);
                 }
-
-                item.propertiesVariableMap[varName] = parsedVal;
             }
 
-            const propDefaults = await this.dataSource.query(`
-                SELECT p."variableName", p."defaultValue", p.code
-                FROM product_properties pp
-                JOIN properties p ON pp."propertyId" = p.id
-                WHERE pp."productId" = $1
-                  AND p."variableName" IS NOT NULL
-                  AND p."defaultValue" IS NOT NULL
-            `, [item.productId]);
+            for (const item of itemsForGeneration.filter(i => sectionItems.some(si => si.getId() === i.id))) {
+                // First, apply header properties as defaults
+                Object.assign(item.propertiesVariableMap, headerPropsMap);
 
-            for (const pd of propDefaults) {
-                const varName = pd.variableName || pd.code;
-                if (item.propertiesVariableMap[varName] === undefined) {
-                    let parsedVal: number | string | boolean = pd.defaultValue;
-                    if (pd.defaultValue === 'true') {
-                        parsedVal = 1;
-                    } else if (pd.defaultValue === 'false') {
-                        parsedVal = 0;
-                    } else {
-                        const numVal = parseFloat(pd.defaultValue);
-                        if (!isNaN(numVal) && String(numVal) === pd.defaultValue) {
-                            parsedVal = numVal;
-                        }
+                // Then, apply item-specific properties (overriding header)
+                const propsData = await this.dataSource.query(`
+                    SELECT p."variableName", p."defaultValue", p."code", p.id, p."dataType", pio.value as "actualValue"
+                    FROM property_in_order pio
+                    JOIN properties p ON pio."propertyCode" = p.code
+                    WHERE pio."orderItemId" = $1
+                `, [item.id]);
+
+                for (const row of propsData) {
+                    const varName = row.variableName || row.code;
+                    item.propertiesVariableMap[varName] = this.parsePropValue(row.actualValue);
+                }
+
+                const propDefaults = await this.dataSource.query(`
+                    SELECT p."variableName", pp."defaultValue", p.code
+                    FROM product_properties pp
+                    JOIN properties p ON pp."propertyId" = p.id
+                    WHERE pp."productId" = $1
+                      AND p."variableName" IS NOT NULL
+                      AND pp."defaultValue" IS NOT NULL
+                `, [item.productId]);
+
+                for (const pd of propDefaults) {
+                    const varName = pd.variableName || pd.code;
+                    if (item.propertiesVariableMap[varName] === undefined) {
+                        item.propertiesVariableMap[varName] = this.parsePropValue(pd.defaultValue);
                     }
-
-                    item.propertiesVariableMap[varName] = parsedVal;
                 }
             }
         }
@@ -202,9 +200,22 @@ export class GenerateWorkOrdersUseCase {
             }
         }
 
-        // Теперь загружаем маршруты и материалы для ВСЕХ найденных продуктов
+        // Загружаем маршруты и материалы для ВСЕХ найденных продуктов
         for (const productId of allProductIdsToLoadMetadata) {
-            const route = await this.routeRepository.findActiveByProductId(productId);
+            // Сначала ищем индивидуальный маршрут продукта
+            let route = await this.routeRepository.findActiveByProductId(productId);
+
+            // Если нет индивидуального маршрута — ищем шаблон через routeTemplateId
+            if (!route) {
+                const product = await this.productRepository.findById(productId);
+                if (product && product.getRouteTemplateId()) {
+                    route = await this.routeRepository.findById(product.getRouteTemplateId()!);
+                    if (route) {
+                        console.log(`Продукт ${productId} использует шаблон маршрута #${product.getRouteTemplateId()}`);
+                    }
+                }
+            }
+
             if (route) {
                 const mappedSteps = [];
                 for (const step of route.getSortedSteps()) {
@@ -215,6 +226,7 @@ export class GenerateWorkOrdersUseCase {
                         operationName: op?.getName() || `Op ${step.getOperationId()}`,
                         stepNumber: step.getStepNumber(),
                         isRequired: step.getIsRequired(),
+                        conditionFormula: step.getConditionFormula(),
                     });
                 }
                 operationSteps.set(productId, mappedSteps);
@@ -329,5 +341,22 @@ export class GenerateWorkOrdersUseCase {
             operationMaterials,
             componentSchemas
         });
+    }
+
+    /**
+     * Parsing property values for math.js context
+     */
+    private parsePropValue(valStr: string): any {
+        if (!valStr) return valStr;
+        if (valStr === 'true') return 1;
+        if (valStr === 'false') return 0;
+
+        const numValue = parseFloat(valStr);
+        // Check if it's truly a number or a string starting with a number
+        if (!isNaN(numValue) && String(numValue) === valStr) {
+            return numValue;
+        }
+
+        return valStr; // Return as string (e.g. "White", "RAL 7035")
     }
 }

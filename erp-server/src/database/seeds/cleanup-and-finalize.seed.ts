@@ -20,14 +20,14 @@ export async function seedCleanupAndFinalize(dataSource: DataSource): Promise<vo
     // 1. Rename confusing modifiers
     const modifiers = await modifierRepo.find();
     for (const m of modifiers) {
-        if (m.name.includes('Integrity Test 2')) {
+        if (m.name.includes('Integrity Test 2') || m.name.includes('Adjustment 2')) {
             m.name = 'Наценка: Дуб (Материал)';
             await modifierRepo.save(m);
-            console.log('  Updated modifier: Integrity Test 2 -> Наценка: Дуб');
-        } else if (m.name.includes('Integrity Test 3')) {
+            console.log('  Updated modifier: [Test Modifier 2] -> Наценка: Дуб');
+        } else if (m.name.includes('Integrity Test 3') || m.name.includes('Adjustment 3')) {
             m.name = 'Наценка: Патина Золото';
             await modifierRepo.save(m);
-            console.log('  Updated modifier: Integrity Test 3 -> Наценка: Патина Золото');
+            console.log('  Updated modifier: [Test Modifier 3] -> Наценка: Патина Золото');
         }
     }
 

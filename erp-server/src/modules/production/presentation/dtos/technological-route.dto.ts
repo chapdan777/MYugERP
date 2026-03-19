@@ -21,6 +21,11 @@ export class CreateOperationMaterialDto {
 }
 
 export class CreateRouteStepDto {
+    @ApiPropertyOptional({ description: 'Frontend ID for DND' })
+    @IsOptional()
+    @IsString()
+    feId?: string;
+
     @ApiProperty({ description: 'Порядковый номер шага' })
     @IsNumber()
     stepNumber!: number;
@@ -33,6 +38,11 @@ export class CreateRouteStepDto {
     @IsBoolean()
     isRequired!: boolean;
 
+    @ApiPropertyOptional({ description: 'Формула условия выполнения шага' })
+    @IsOptional()
+    @IsString()
+    conditionFormula?: string;
+
     @ApiPropertyOptional({ type: [CreateOperationMaterialDto], description: 'Материалы для операции' })
     @IsOptional()
     @IsArray()
@@ -42,7 +52,7 @@ export class CreateRouteStepDto {
 }
 
 export class CreateTechnologicalRouteDto {
-    @ApiProperty({ description: 'ID продукта' })
+    @ApiProperty({ description: 'ID продукта (0 для шаблонов)' })
     @IsNumber()
     productId!: number;
 
@@ -55,6 +65,11 @@ export class CreateTechnologicalRouteDto {
     @IsString()
     description?: string;
 
+    @ApiPropertyOptional({ description: 'Является ли шаблоном', default: false })
+    @IsOptional()
+    @IsBoolean()
+    isTemplate?: boolean;
+
     @ApiProperty({ type: [CreateRouteStepDto], description: 'Шаги маршрута' })
     @IsArray()
     @ValidateNested({ each: true })
@@ -63,6 +78,16 @@ export class CreateTechnologicalRouteDto {
 }
 
 export class UpdateTechnologicalRouteDto {
+    @ApiPropertyOptional({ description: 'ID продукта' })
+    @IsOptional()
+    @IsNumber()
+    productId?: number;
+
+    @ApiPropertyOptional({ description: 'Является ли шаблоном' })
+    @IsOptional()
+    @IsBoolean()
+    isTemplate?: boolean;
+
     @ApiPropertyOptional({ description: 'Название маршрута' })
     @IsOptional()
     @IsString()
@@ -118,6 +143,9 @@ export class RouteStepResponseDto {
     @ApiProperty()
     isRequired!: boolean;
 
+    @ApiPropertyOptional({ description: 'Формула условия выполнения шага' })
+    conditionFormula?: string | null;
+
     @ApiProperty({ type: [OperationMaterialResponseDto] })
     materials!: OperationMaterialResponseDto[];
 
@@ -127,6 +155,7 @@ export class RouteStepResponseDto {
         dto.stepNumber = entity.getStepNumber();
         dto.operationId = entity.getOperationId();
         dto.isRequired = entity.getIsRequired();
+        dto.conditionFormula = entity.getConditionFormula();
         dto.materials = entity.getMaterials().map(m => OperationMaterialResponseDto.fromEntity(m));
         return dto;
     }
@@ -136,8 +165,8 @@ export class TechnologicalRouteResponseDto {
     @ApiProperty()
     id!: number;
 
-    @ApiProperty()
-    productId!: number;
+    @ApiProperty({ description: 'ID продукта (null для шаблонов)' })
+    productId!: number | null;
 
     @ApiProperty()
     name!: string;
@@ -147,6 +176,9 @@ export class TechnologicalRouteResponseDto {
 
     @ApiProperty()
     isActive!: boolean;
+
+    @ApiProperty()
+    isTemplate!: boolean;
 
     @ApiProperty({ type: [RouteStepResponseDto] })
     steps!: RouteStepResponseDto[];
@@ -158,6 +190,7 @@ export class TechnologicalRouteResponseDto {
         dto.name = entity.getName();
         dto.description = entity.getDescription() || undefined;
         dto.isActive = entity.getIsActive();
+        dto.isTemplate = entity.getIsTemplate();
         dto.steps = entity.getSteps().map(s => RouteStepResponseDto.fromEntity(s));
         return dto;
     }

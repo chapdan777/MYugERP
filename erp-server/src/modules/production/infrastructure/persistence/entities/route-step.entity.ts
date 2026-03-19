@@ -25,6 +25,9 @@ export class RouteStepEntity {
     @Column({ name: 'estimated_time', type: 'float', nullable: true })
     estimatedTime!: number | null;
 
+    @Column({ name: 'condition_formula', type: 'text', nullable: true })
+    conditionFormula!: string | null;
+
     @ManyToOne(() => TechnologicalRouteEntity, (route) => route.steps, {
         onDelete: 'CASCADE',
     })

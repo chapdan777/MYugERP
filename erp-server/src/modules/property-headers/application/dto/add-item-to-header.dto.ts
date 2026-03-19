@@ -8,6 +8,9 @@ export class AddItemToHeaderDto {
   @IsNotEmpty()
   propertyId!: number;
 
+  @IsNotEmpty()
+  value!: string;
+
   @IsNumber()
   @IsOptional()
   sortOrder?: number;

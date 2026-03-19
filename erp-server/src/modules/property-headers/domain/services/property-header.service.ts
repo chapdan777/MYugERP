@@ -107,6 +107,7 @@ export class PropertyHeaderService {
   async addItemToHeader(props: {
     headerId: number;
     propertyId: number;
+    value: string;
     sortOrder?: number;
   }): Promise<PropertyHeaderItem> {
     // Проверка существования шапки
@@ -127,6 +128,7 @@ export class PropertyHeaderService {
     const item = PropertyHeaderItem.create({
       headerId: props.headerId,
       propertyId: props.propertyId,
+      value: props.value,
       sortOrder: props.sortOrder,
     });
 

@@ -7,17 +7,20 @@ import { DomainException } from '../../../../common/exceptions/domain.exception'
 export class PropertyHeaderItem {
   private headerId: number;
   private propertyId: number;
+  private value: string;
   private sortOrder: number;
   private createdAt: Date;
 
   private constructor(props: {
     headerId: number;
     propertyId: number;
+    value: string;
     sortOrder?: number;
     createdAt?: Date;
   }) {
     this.headerId = props.headerId;
     this.propertyId = props.propertyId;
+    this.value = props.value;
     this.sortOrder = props.sortOrder ?? 0;
     this.createdAt = props.createdAt ?? new Date();
 
@@ -30,6 +33,7 @@ export class PropertyHeaderItem {
   static create(props: {
     headerId: number;
     propertyId: number;
+    value: string;
     sortOrder?: number;
   }): PropertyHeaderItem {
     return new PropertyHeaderItem(props);
@@ -41,6 +45,7 @@ export class PropertyHeaderItem {
   static restore(props: {
     headerId: number;
     propertyId: number;
+    value: string;
     sortOrder?: number;
     createdAt: Date;
   }): PropertyHeaderItem {
@@ -58,6 +63,10 @@ export class PropertyHeaderItem {
     if (!this.propertyId || this.propertyId <= 0) {
       throw new DomainException('ID свойства должен быть положительным числом');
     }
+
+    if (this.value === undefined || this.value === null) {
+      throw new DomainException('Значение свойства в шапке должно быть указано');
+    }
   }
 
   // Getters
@@ -67,6 +76,17 @@ export class PropertyHeaderItem {
 
   getPropertyId(): number {
     return this.propertyId;
+  }
+
+  getValue(): string {
+    return this.value;
+  }
+
+  updateValue(value: string): void {
+    if (!value) {
+      throw new DomainException('Значение свойства в шапке должно быть указано');
+    }
+    this.value = value;
   }
 
   getSortOrder(): number {

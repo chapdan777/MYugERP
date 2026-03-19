@@ -77,6 +77,8 @@ export async function seedRecoveryData(dataSource: DataSource): Promise<void> {
     // 2. Create Materials
     const materialsToCreate = [
         { code: 'MAT-MDF10', name: 'МДФ 10мм', category: 'MATERIAL', unit: 'м2', basePrice: 500 },
+        { code: 'MAT-MDF8', name: 'МДФ 8мм', category: 'MATERIAL', unit: 'м2', basePrice: 450 },
+        { code: 'MAT-MDF-RUB', name: 'МДФ для рубашки 1.5мм', category: 'MATERIAL', unit: 'м2', basePrice: 300 },
         { code: 'MAT-VENEER', name: 'Шпон', category: 'MATERIAL', unit: 'м2', basePrice: 1200 },
         { code: 'MAT-GLUE', name: 'Клей ПВА', category: 'MATERIAL', unit: 'кг', basePrice: 350 },
         { code: 'MAT-ABRASIVE', name: 'Шкурка шлифовальная', category: 'MATERIAL', unit: 'шт', basePrice: 50 },
@@ -85,6 +87,7 @@ export async function seedRecoveryData(dataSource: DataSource): Promise<void> {
         { code: 'MAT-ENAMEL', name: 'Эмаль', category: 'MATERIAL', unit: 'кг', basePrice: 1500 },
         { code: 'MAT-STAIN', name: 'Морилка', category: 'MATERIAL', unit: 'кг', basePrice: 900 },
         { code: 'MAT-LACQUER', name: 'Лак', category: 'MATERIAL', unit: 'кг', basePrice: 1100 },
+        { code: 'MAT-FILM-TEX', name: 'Плёнка для накатки текстуры', category: 'MATERIAL', unit: 'м2', basePrice: 400 },
     ];
 
     const materialsMap: Record<string, number> = {};
@@ -101,7 +104,11 @@ export async function seedRecoveryData(dataSource: DataSource): Promise<void> {
     const operationsToCreate = [
         { code: 'R-01', name: 'Раскрой', calculationType: OperationCalculationType.PER_PIECE },
         { code: 'F-01', name: 'Фрезеровка большая', calculationType: OperationCalculationType.PER_PIECE },
+        { code: 'F-02', name: 'Фрезеровка малая', calculationType: OperationCalculationType.PER_PIECE },
         { code: 'S-01', name: 'Шпонирование филенки', calculationType: OperationCalculationType.PER_PIECE },
+        { code: 'S-02', name: 'Шпонирование одностороннее', calculationType: OperationCalculationType.PER_PIECE },
+        { code: 'NT-01', name: 'Накатка текстуры', calculationType: OperationCalculationType.PER_PIECE },
+        { code: 'KL-01', name: 'Приклейка рубашки', calculationType: OperationCalculationType.PER_PIECE },
         { code: 'SCM-01', name: 'Шлифовка SCM', calculationType: OperationCalculationType.PER_PIECE },
         { code: 'PR-01', name: 'Профилирование', calculationType: OperationCalculationType.PER_PIECE },
         { code: 'SB-01', name: 'Сборка', calculationType: OperationCalculationType.PER_PIECE },
@@ -123,11 +130,11 @@ export async function seedRecoveryData(dataSource: DataSource): Promise<void> {
     // 4. Create Departments
     const deptsToCreate = [
         { code: 'DEPT-R', name: 'Участок Раскроя', ops: ['R-01'] },
-        { code: 'DEPT-CHPU', name: 'Участок ЧПУ', ops: ['F-01'] },
-        { code: 'DEPT-PRESS', name: 'Горячий пресс', ops: ['S-01'] },
+        { code: 'DEPT-CHPU', name: 'Участок ЧПУ', ops: ['F-01', 'F-02'] },
+        { code: 'DEPT-PRESS', name: 'Горячий пресс', ops: ['S-01', 'S-02', 'NT-01'] },
         { code: 'DEPT-SHLIF', name: 'Участок Шлифовки', ops: ['SCM-01', 'SH-01'] },
         { code: 'DEPT-PROF', name: 'Участок Профилирования', ops: ['PR-01'] },
-        { code: 'DEPT-SBR', name: 'Сборочный цех', ops: ['SB-01'] },
+        { code: 'DEPT-SBR', name: 'Сборочный цех', ops: ['SB-01', 'KL-01'] },
         { code: 'DEPT-MAL', name: 'Малярный участок', ops: ['P-01'] },
         { code: 'DEPT-UPK', name: 'Участок Упаковки', ops: ['U-01'] },
     ];
@@ -261,6 +268,169 @@ export async function seedRecoveryData(dataSource: DataSource): Promise<void> {
             }
         }
     }
+
+    // 6. Номенклатура филенок (шаблоны)
+    const panelProducts = [
+        { code: 'COMP-FIL-STANDARD', name: 'Филенка Стандарт', category: 'COMPONENT' },
+        { code: 'COMP-FIL-FLAT', name: 'Филенка Плоская', category: 'COMPONENT' },
+        { code: 'COMP-FIL-VERONIKA', name: 'Филенка Вероника', category: 'COMPONENT' },
+        { code: 'COMP-FIL-LONDON', name: 'Филенка Лондон', category: 'COMPONENT' },
+        { code: 'COMP-FIL-STANDARD-RUB15', name: 'Филенка Стандарт + Рубашка 1.5мм', category: 'COMPONENT' },
+        { code: 'COMP-FIL-FIGURED', name: 'Филенка Фигурная', category: 'COMPONENT' },
+        { code: 'COMP-RUBASHKA-15', name: 'Рубашка 1.5мм', category: 'COMPONENT' },
+    ];
+
+    const panelIds: Record<string, number> = {};
+    for (const p of panelProducts) {
+        let prod = await productRepo.findOne({ where: { code: p.code } });
+        if (!prod) {
+            prod = await productRepo.save(productRepo.create({ ...p, isActive: true, unit: 'шт', basePrice: 0 }));
+            console.log(`  Panel product created: ${p.name}`);
+        }
+        panelIds[p.code] = prod.id;
+    }
+
+    // Условия (сокращения для формул conditionFormula)
+    const NOT_OLHA_ENAMEL = 'not(material == "Ольха" and is_enamel == 1)';
+    const DUB_ENAMEL = 'material == "Дуб" and is_enamel == 1';
+    const USE_TEXTURE_ROLLING = 'use_texture_rolling == 1 and is_enamel == 1';
+
+    // Хелпер для создания маршрута с условными шагами
+    type StepDef = {
+        op: string;
+        num: number;
+        condition?: string | null;
+        materials?: { id: number; formula: string; unit: string }[];
+    };
+
+    const createRoute = async (productId: number, routeName: string, steps: StepDef[]) => {
+        await routeRepo.delete({ productId });
+        const route = await routeRepo.save(routeRepo.create({
+            productId,
+            name: routeName,
+            isActive: true
+        }));
+        for (const s of steps) {
+            const step = await stepRepo.save(stepRepo.create({
+                routeId: route.id,
+                operationId: opsMap[s.op],
+                stepNumber: s.num,
+                isRequired: true,
+                conditionFormula: s.condition || null,
+            }));
+            if (s.materials) {
+                for (const m of s.materials) {
+                    await stepMaterialRepo.save(stepMaterialRepo.create({
+                        routeStepId: step.id,
+                        materialId: m.id,
+                        consumptionFormula: m.formula,
+                        unit: m.unit
+                    }));
+                }
+            }
+        }
+        console.log(`  Route created: ${routeName} (${steps.length} steps)`);
+    };
+
+    // 6.1 Маршрут: Филенка Стандарт
+    // Раскрой → Фрезеровка большая → [Шпонирование двуст.] → [Шпон. одностор. (Дуб+Эмаль)] → [Накатка текстуры (Дуб+Эмаль)] → [Накатка текстуры (клиент.)] → Шлифовка SCM
+    await createRoute(panelIds['COMP-FIL-STANDARD'], 'Маршрут: Филенка Стандарт', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF10'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'F-01', num: 2 },
+        { op: 'S-01', num: 3, condition: NOT_OLHA_ENAMEL, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0002', unit: 'кг' },
+        ]},
+        { op: 'S-02', num: 4, condition: DUB_ENAMEL, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0001', unit: 'кг' },
+        ]},
+        { op: 'NT-01', num: 5, condition: DUB_ENAMEL, materials: [
+            { id: materialsMap['MAT-FILM-TEX'], formula: '(H * W) / 1000000', unit: 'м2' },
+        ]},
+        { op: 'NT-01', num: 6, condition: USE_TEXTURE_ROLLING, materials: [
+            { id: materialsMap['MAT-FILM-TEX'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+        ]},
+        { op: 'SCM-01', num: 7, materials: [{ id: materialsMap['MAT-ABRASIVE'], formula: '0.1', unit: 'шт' }] },
+    ]);
+
+    // 6.2 Маршрут: Филенка Плоская
+    // Раскрой → [Фрезеровка малая (зависит от паза)] → [Шпонирование] → Шлифовка SCM
+    await createRoute(panelIds['COMP-FIL-FLAT'], 'Маршрут: Филенка Плоская', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF10'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'F-02', num: 2, condition: 'groove_depth > 0' },
+        { op: 'S-01', num: 3, condition: NOT_OLHA_ENAMEL, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0002', unit: 'кг' },
+        ]},
+        { op: 'SCM-01', num: 4, materials: [{ id: materialsMap['MAT-ABRASIVE'], formula: '0.1', unit: 'шт' }] },
+    ]);
+
+    // 6.3 Маршрут: Филенка Вероника
+    // Раскрой → Шпонирование → Фрезеровка большая → Шлифовка SCM
+    await createRoute(panelIds['COMP-FIL-VERONIKA'], 'Маршрут: Филенка Вероника', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF10'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'S-01', num: 2, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0002', unit: 'кг' },
+        ]},
+        { op: 'F-01', num: 3 },
+        { op: 'SCM-01', num: 4, materials: [{ id: materialsMap['MAT-ABRASIVE'], formula: '0.1', unit: 'шт' }] },
+    ]);
+
+    // 6.4 Маршрут: Филенка Лондон (аналогична Вероника, но другой материал)
+    await createRoute(panelIds['COMP-FIL-LONDON'], 'Маршрут: Филенка Лондон', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF8'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'S-01', num: 2, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0002', unit: 'кг' },
+        ]},
+        { op: 'F-01', num: 3 },
+        { op: 'SCM-01', num: 4, materials: [{ id: materialsMap['MAT-ABRASIVE'], formula: '0.1', unit: 'шт' }] },
+    ]);
+
+    // 6.5 Маршрут: Рубашка 1.5мм (дочерний компонент)
+    await createRoute(panelIds['COMP-RUBASHKA-15'], 'Маршрут: Рубашка 1.5мм', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF-RUB'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'S-01', num: 2, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0001', unit: 'кг' },
+        ]},
+        { op: 'F-02', num: 3 },
+    ]);
+
+    // 6.6 Маршрут: Филенка Стандарт + Рубашка 1.5мм
+    // Ольха+Эмаль: Раскрой → Фрезеровка большая (2 операции)
+    // Иначе: Раскрой → Фрезеровка → Шпонирование → Приклейка рубашки → Шлифовка
+    await createRoute(panelIds['COMP-FIL-STANDARD-RUB15'], 'Маршрут: Стандарт + Рубашка', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF10'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'F-01', num: 2 },
+        { op: 'S-01', num: 3, condition: NOT_OLHA_ENAMEL, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0002', unit: 'кг' },
+        ]},
+        { op: 'KL-01', num: 4, condition: NOT_OLHA_ENAMEL, materials: [
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0001', unit: 'кг' },
+        ]},
+        { op: 'SCM-01', num: 5, materials: [{ id: materialsMap['MAT-ABRASIVE'], formula: '0.1', unit: 'шт' }] },
+    ]);
+
+    // 6.7 Маршрут: Филенка Фигурная
+    // Ольха+Эмаль: Раскрой → Фрезеровка большая (2 операции)
+    // Иначе: Раскрой → Фрез. малая → Шпонирование → Приклейка рубашки → Шлифовка
+    await createRoute(panelIds['COMP-FIL-FIGURED'], 'Маршрут: Филенка Фигурная', [
+        { op: 'R-01', num: 1, materials: [{ id: materialsMap['MAT-MDF10'], formula: '(H * W) / 1000000', unit: 'м2' }] },
+        { op: 'F-01', num: 2, condition: 'material == "Ольха" and is_enamel == 1' },
+        { op: 'F-02', num: 3, condition: NOT_OLHA_ENAMEL },
+        { op: 'S-01', num: 4, condition: NOT_OLHA_ENAMEL, materials: [
+            { id: materialsMap['MAT-VENEER'], formula: '(H * W) * 2 / 1000000', unit: 'м2' },
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0002', unit: 'кг' },
+        ]},
+        { op: 'KL-01', num: 5, condition: NOT_OLHA_ENAMEL, materials: [
+            { id: materialsMap['MAT-GLUE'], formula: '(H * W) * 0.0001', unit: 'кг' },
+        ]},
+        { op: 'SCM-01', num: 6, materials: [{ id: materialsMap['MAT-ABRASIVE'], formula: '0.1', unit: 'шт' }] },
+    ]);
 
     console.log('--- Recovery Data Seed Completed ---');
 }

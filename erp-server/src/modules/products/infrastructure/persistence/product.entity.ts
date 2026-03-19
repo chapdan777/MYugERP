@@ -41,6 +41,9 @@ export class ProductEntity {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ name: 'route_template_id', type: 'int', nullable: true })
+  routeTemplateId!: number | null;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt!: Date;
 

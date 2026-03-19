@@ -8,10 +8,10 @@ export class FormulaEvaluatorService {
     /**
      * Вычисляет математическое выражение с заданными переменными контекста
      * @param formula Строка формулы (например, "L * W / 1000")
-     * @param context Переменные (ключ-значение) (например, { L: 2000, W: 500 })
+     * @param context Переменные (ключ-значение) (например, { L: 2000, W: 500, color: 'White' })
      * @returns Вычисленное число
      */
-    evaluate(formula: string, context: Record<string, number>): number {
+    evaluate(formula: string, context: Record<string, any>): number {
         try {
             // math.evaluate возвращает базовые типы, логику или матрицы. Мы ожидаем здесь числа.
             const result = math.evaluate(formula, context);

@@ -5,6 +5,7 @@ export abstract class ITechnologicalRouteRepository {
     abstract findById(id: number): Promise<TechnologicalRoute | null>;
     abstract findByProductId(productId: number): Promise<TechnologicalRoute[]>;
     abstract findActiveByProductId(productId: number): Promise<TechnologicalRoute | null>;
+    abstract findTemplates(): Promise<TechnologicalRoute[]>;
     abstract findAll(): Promise<TechnologicalRoute[]>;
     abstract delete(id: number): Promise<void>;
 }

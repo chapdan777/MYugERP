@@ -10,6 +10,8 @@ import { ProductProperty as DbProductProperty } from '../../../products/domain/e
 import { ComponentGenerationService } from '../../../production/domain/services/component-generation.service';
 import { PRODUCT_COMPONENT_SCHEMA_REPOSITORY } from '../../../production/domain/repositories/product-component-schema.repository.interface';
 import type { IProductComponentSchemaRepository } from '../../../production/domain/repositories/product-component-schema.repository.interface';
+import { PROPERTY_REPOSITORY } from '../../../properties/domain/repositories/injection-tokens';
+import { IPropertyRepository } from '../../../properties/domain/repositories/property.repository.interface';
 
 // Интерфейсы для внешних сервисов (будут реализованы при интеграции)
 export interface Product {
@@ -81,6 +83,8 @@ export class ProductPriceCalculatorService {
     private readonly productPropertyRepository: IProductPropertyRepository,
     @Inject(PRODUCT_COMPONENT_SCHEMA_REPOSITORY)
     private readonly schemaRepository: IProductComponentSchemaRepository,
+    @Inject(PROPERTY_REPOSITORY)
+    private readonly propertyRepository: IPropertyRepository,
     private readonly componentGenerationService: ComponentGenerationService,
   ) { }
 
@@ -169,10 +173,22 @@ export class ProductPriceCalculatorService {
     try {
       const schemas = await this.schemaRepository.findByProductId(context.productId);
       if (schemas && schemas.length > 0) {
+        // Получаем метаданные свойств для маппинга на variableName
+        const propertyIds = activeProperties.map(p => p.propertyId);
+        const propertyMetadata = await this.propertyRepository.findByIds(propertyIds);
+        
         const propMap: Record<string, any> = {};
         activeProperties.forEach(p => {
-          propMap[p.propertyId] = p.currentValue || p.defaultValue;
+          const meta = propertyMetadata.find(m => m.getId() === p.propertyId);
+          const varName = meta?.getVariableName() || meta?.getCode() || String(p.propertyId);
+          propMap[varName] = p.currentValue || p.defaultValue;
         });
+
+        // Также добавляем габариты в явном виде
+        propMap['H'] = dimensions.length;
+        propMap['W'] = dimensions.width;
+        propMap['D'] = dimensions.depth;
+        propMap['Q'] = context.quantity;
 
         const detailedComponents = this.componentGenerationService.generateComponentsDetailed(
           {
@@ -206,6 +222,11 @@ export class ProductPriceCalculatorService {
       }
     } catch (error) {
       console.error('Failed to calculate BOM components for price result:', error);
+    }
+
+    console.log(`[PricingService] Calculation for product ${context.productId}: ${components.length} components found`);
+    if (components.length > 0) {
+      console.log('[PricingService] Components details:', JSON.stringify(components, null, 2));
     }
 
     return {

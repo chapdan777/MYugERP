@@ -75,7 +75,8 @@ export class PricingController {
             width: dto.width,
             depth: dto.depth,
             propertyValues: dto.propertyValues,
-            // unitType and coefficient will be determined by the calculator logic or defaults
+            coefficient: dto.coefficient,
+            unitType: dto.unitType as any,
         });
     }
 }

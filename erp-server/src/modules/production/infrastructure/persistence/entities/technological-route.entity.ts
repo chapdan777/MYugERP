@@ -6,8 +6,8 @@ export class TechnologicalRouteEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ name: 'product_id' })
-    productId!: number;
+    @Column({ name: 'product_id', type: 'int', nullable: true })
+    productId!: number | null;
 
     @Column()
     name!: string;
@@ -17,6 +17,9 @@ export class TechnologicalRouteEntity {
 
     @Column({ name: 'is_active', default: true })
     isActive!: boolean;
+
+    @Column({ name: 'is_template', default: false })
+    isTemplate!: boolean;
 
     @OneToMany(() => RouteStepEntity, (step) => step.route, {
         cascade: true,

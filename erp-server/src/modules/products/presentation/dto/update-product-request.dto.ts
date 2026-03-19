@@ -43,4 +43,8 @@ export class UpdateProductRequestDto {
   @IsNumber()
   @IsOptional()
   defaultDepth?: number;
+
+  @IsNumber()
+  @IsOptional()
+  routeTemplateId?: number | null;
 }

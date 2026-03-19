@@ -7,20 +7,22 @@ import { RouteStep } from './route-step.entity';
  */
 export class TechnologicalRoute {
   private id?: number;
-  private productId: number;
+  private productId: number | null;
   private name: string;
   private description: string | null;
   private isActive: boolean;
+  private isTemplate: boolean;
   private steps: RouteStep[];
   private createdAt: Date;
   private updatedAt: Date;
 
   private constructor(props: {
     id?: number;
-    productId: number;
+    productId: number | null;
     name: string;
     description?: string | null;
     isActive?: boolean;
+    isTemplate?: boolean;
     steps?: RouteStep[];
     createdAt?: Date;
     updatedAt?: Date;
@@ -30,6 +32,7 @@ export class TechnologicalRoute {
     this.name = props.name;
     this.description = props.description ?? null;
     this.isActive = props.isActive ?? true;
+    this.isTemplate = props.isTemplate ?? false;
     this.steps = props.steps ?? [];
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
@@ -41,10 +44,11 @@ export class TechnologicalRoute {
    * Factory method to create a new technological route
    */
   static create(props: {
-    productId: number;
+    productId: number | null;
     name: string;
     description?: string | null;
     isActive?: boolean;
+    isTemplate?: boolean;
   }): TechnologicalRoute {
     return new TechnologicalRoute(props);
   }
@@ -54,10 +58,11 @@ export class TechnologicalRoute {
    */
   static restore(props: {
     id: number;
-    productId: number;
+    productId: number | null;
     name: string;
     description: string | null;
     isActive: boolean;
+    isTemplate: boolean;
     steps: RouteStep[];
     createdAt: Date;
     updatedAt: Date;
@@ -69,7 +74,7 @@ export class TechnologicalRoute {
    * Validate invariants
    */
   private validate(): void {
-    if (this.productId <= 0) {
+    if (!this.isTemplate && (!this.productId || this.productId <= 0)) {
       throw new DomainException('Product ID must be positive');
     }
     if (!this.name || this.name.trim().length === 0) {
@@ -144,12 +149,29 @@ export class TechnologicalRoute {
     this.updatedAt = new Date();
   }
 
+  /**
+   * Заменить все шаги маршрута (полезно при полном редактировании)
+   */
+  replaceSteps(steps: RouteStep[]): void {
+    // Проверка на уникальность номеров шагов
+    const stepNumbers = new Set<number>();
+    for (const step of steps) {
+      if (stepNumbers.has(step.getStepNumber())) {
+        throw new DomainException(`Дублирующийся номер шага ${step.getStepNumber()}`);
+      }
+      stepNumbers.add(step.getStepNumber());
+    }
+
+    this.steps = [...steps];
+    this.updatedAt = new Date();
+  }
+
   // Getters
   getId(): number | undefined {
     return this.id;
   }
 
-  getProductId(): number {
+  getProductId(): number | null {
     return this.productId;
   }
 
@@ -163,6 +185,10 @@ export class TechnologicalRoute {
 
   getIsActive(): boolean {
     return this.isActive;
+  }
+
+  getIsTemplate(): boolean {
+    return this.isTemplate;
   }
 
   getSteps(): RouteStep[] {

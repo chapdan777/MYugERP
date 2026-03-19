@@ -23,6 +23,7 @@ export class ProductMapper {
       defaultWidth: entity.defaultWidth ? Number(entity.defaultWidth) : null,
       defaultDepth: entity.defaultDepth ? Number(entity.defaultDepth) : null,
       isActive: entity.isActive,
+      routeTemplateId: entity.routeTemplateId ?? null,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });
@@ -48,6 +49,7 @@ export class ProductMapper {
     entity.defaultWidth = domain.getDefaultWidth();
     entity.defaultDepth = domain.getDefaultDepth();
     entity.isActive = domain.getIsActive();
+    entity.routeTemplateId = domain.getRouteTemplateId();
     entity.createdAt = domain.getCreatedAt();
     entity.updatedAt = domain.getUpdatedAt();
 

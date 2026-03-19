@@ -15,6 +15,7 @@ export class ProductResponseDto {
   defaultLength!: number | null;
   defaultWidth!: number | null;
   defaultDepth!: number | null;
+  routeTemplateId!: number | null;
   isActive!: boolean;
   createdAt!: Date;
   updatedAt!: Date;
@@ -31,6 +32,7 @@ export class ProductResponseDto {
     dto.defaultLength = product.getDefaultLength();
     dto.defaultWidth = product.getDefaultWidth();
     dto.defaultDepth = product.getDefaultDepth();
+    dto.routeTemplateId = product.getRouteTemplateId();
     dto.isActive = product.getIsActive();
     dto.createdAt = product.getCreatedAt();
     dto.updatedAt = product.getUpdatedAt();

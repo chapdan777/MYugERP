@@ -19,6 +19,7 @@ export class AddItemToHeaderUseCase {
     return await this.propertyHeaderService.addItemToHeader({
       headerId,
       propertyId: dto.propertyId,
+      value: dto.value,
       sortOrder: dto.sortOrder ?? 0,
     });
   }
